@@ -73,6 +73,12 @@ public class ImmutableIntList extends FlatLists.AbstractFlatList<Integer> {
     return new ImmutableIntList(ints.clone());
   }
 
+  /** Same as {@link #of(int...)}, but less ambiguous for code generators
+   * and compilers. */
+  public static ImmutableIntList copyOf(int... ints) {
+    return of(ints);
+  }
+
   /**
    * Creates an ImmutableIntList from an array of {@code Number}.
    */
@@ -273,7 +279,10 @@ public class ImmutableIntList extends FlatLists.AbstractFlatList<Integer> {
 
   /** Returns a list that contains the values lower to upper - 1.
    *
-   * <p>For example, {@code range(1, 3)} contains [1, 2]. */
+   * <p>For example, {@code range(1, 3)} contains [1, 2].
+   *
+   * @deprecated Use {@link Util#range(int, int)} */
+  @Deprecated // to be removed before 2.0
   public static List<Integer> range(final int lower, final int upper) {
     return Functions.generate(upper - lower, index -> lower + index);
   }
