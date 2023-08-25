@@ -6029,35 +6029,75 @@ public class SqlParserTest {
   }
 
   @Test void testCastAsCollectionType() {
+    // Consider both standard type (like INTEGER ARRAY)
+    // and non-standard type (like ARRAY<INTEGER>).
+
     // test array type.
+    final String expected1 = "CAST(`A` AS INTEGER ARRAY)";
     expr("cast(a as int array)")
-        .ok("CAST(`A` AS INTEGER ARRAY)");
+        .ok(expected1);
+    expr("cast(a as array<int>)")
+        .ok(expected1);
+
+    final String expected2 = "CAST(`A` AS VARCHAR(5) ARRAY)";
     expr("cast(a as varchar(5) array)")
-        .ok("CAST(`A` AS VARCHAR(5) ARRAY)");
+        .ok(expected2);
+    expr("cast(a as array<varchar(5)>)")
+        .ok(expected2);
+
+    final String expected3 = "CAST(`A` AS INTEGER ARRAY ARRAY)";
     expr("cast(a as int array array)")
-        .ok("CAST(`A` AS INTEGER ARRAY ARRAY)");
+        .ok(expected3);
+    expr("cast(a as array<array<int>>)")
+        .ok(expected3);
+
+    final String expected4 = "CAST(`A` AS VARCHAR(5) ARRAY ARRAY)";
     expr("cast(a as varchar(5) array array)")
-        .ok("CAST(`A` AS VARCHAR(5) ARRAY ARRAY)");
-    expr("cast(a as int array^<^10>)")
-        .fails("(?s).*Encountered \"<\" at line 1, column 20.\n.*");
+        .ok(expected4);
+    expr("cast(a as array<array<varchar(5)>>)")
+        .ok(expected4);
+
     // test multiset type.
+    final String expected5 = "CAST(`A` AS INTEGER MULTISET)";
     expr("cast(a as int multiset)")
-        .ok("CAST(`A` AS INTEGER MULTISET)");
+        .ok(expected5);
+    expr("cast(a as multiset < int > )")
+        .ok(expected5);
+
+    final String expected6 = "CAST(`A` AS VARCHAR(5) MULTISET)";
     expr("cast(a as varchar(5) multiset)")
-        .ok("CAST(`A` AS VARCHAR(5) MULTISET)");
+        .ok(expected6);
+    expr("cast(a as multiset<varchar(5)>)")
+        .ok(expected6);
+
+    final String expected7 = "CAST(`A` AS INTEGER MULTISET ARRAY)";
     expr("cast(a as int multiset array)")
-        .ok("CAST(`A` AS INTEGER MULTISET ARRAY)");
+        .ok(expected7);
+    expr("cast(a as array<multiset<int>>)")
+        .ok(expected7);
+
+    final String expected8 = "CAST(`A` AS VARCHAR(5) MULTISET ARRAY)";
     expr("cast(a as varchar(5) multiset array)")
-        .ok("CAST(`A` AS VARCHAR(5) MULTISET ARRAY)");
+        .ok(expected8);
+    expr("cast(a as array<multiset<varchar(5)>>)")
+        .ok(expected8);
+
     // test row type nested in collection type.
+    final String expected9 = "CAST(`A` AS "
+        + "ROW(`F0` INTEGER ARRAY MULTISET, "
+        + "`F1` VARCHAR(5) ARRAY) "
+        + "ARRAY MULTISET)";
     expr("cast(a as row(f0 int array multiset, f1 varchar(5) array) array multiset)")
-        .ok("CAST(`A` AS "
-            + "ROW(`F0` INTEGER ARRAY MULTISET, "
-            + "`F1` VARCHAR(5) ARRAY) "
-            + "ARRAY MULTISET)");
+        .ok(expected9);
+    expr("cast(a as multiset<array<row(f0 multiset<array<int>>, f1 array<varchar(5)>)>>)")
+        .ok(expected9);
+
     // test UDT collection type.
+    final String expected10 = "CAST(`A` AS `MYUDT` ARRAY MULTISET)";
     expr("cast(a as MyUDT array multiset)")
-        .ok("CAST(`A` AS `MYUDT` ARRAY MULTISET)");
+        .ok(expected10);
+    expr("cast(a as multiset<array<MyUDT>>)")
+        .ok(expected10);
   }
 
   @Test void testCastAsRowType() {

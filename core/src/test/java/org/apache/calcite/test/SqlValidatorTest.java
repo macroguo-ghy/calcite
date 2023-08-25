@@ -7076,55 +7076,124 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testCastAsCollectionType() {
+    // Consider both standard type (like INTEGER ARRAY)
+    // and non-standard type (like ARRAY<INTEGER>).
+
+    final String expected1 = "INTEGER ARRAY NOT NULL";
     sql("select cast(array[1,null,2] as int array) from (values (1))")
-        .columnType("INTEGER ARRAY NOT NULL");
+        .columnType(expected1);
+    sql("select cast(array[1,null,2] as array<int>) from (values (1))")
+        .columnType(expected1);
+
+    final String expected2 = "VARCHAR(5) ARRAY NOT NULL";
     sql("select cast(array['1',null,'2'] as varchar(5) array) from (values (1))")
-        .columnType("VARCHAR(5) ARRAY NOT NULL");
+        .columnType(expected2);
+    sql("select cast(array['1',null,'2'] as array<varchar(5)>) from (values (1))")
+        .columnType(expected2);
+
+    final String expected3 = "INTEGER MULTISET NOT NULL";
     sql("select cast(multiset[1,null,2] as int multiset) from (values (1))")
-        .columnType("INTEGER MULTISET NOT NULL");
+        .columnType(expected3);
+    sql("select cast(multiset[1,null,2] as multiset<int>) from (values (1))")
+        .columnType(expected3);
     sql("select cast(array[1,null,2] as int multiset) from (values (1))")
-        .columnType("INTEGER MULTISET NOT NULL");
+        .columnType(expected3);
+    sql("select cast(array[1,null,2] as multiset<int>) from (values (1))")
+        .columnType(expected3);
 
     // test array type.
+    final String expected4 = "INTEGER NOT NULL ARRAY NOT NULL";
     sql("select cast(\"intArrayType\" as int array) from COMPLEXTYPES.CTC_T1")
         .withExtendedCatalog()
-        .columnType("INTEGER NOT NULL ARRAY NOT NULL");
+        .columnType(expected4);
+    sql("select cast(\"intArrayType\" as array<int>) from COMPLEXTYPES.CTC_T1")
+        .withExtendedCatalog()
+        .columnType(expected4);
+
+    final String expected5 = "VARCHAR(5) NOT NULL ARRAY NOT NULL";
     sql("select cast(\"varchar5ArrayType\" as varchar(5) array) from COMPLEXTYPES.CTC_T1")
         .withExtendedCatalog()
-        .columnType("VARCHAR(5) NOT NULL ARRAY NOT NULL");
+        .columnType(expected5);
+    sql("select cast(\"varchar5ArrayType\" as array<varchar(5)>) from COMPLEXTYPES.CTC_T1")
+        .withExtendedCatalog()
+        .columnType(expected5);
+
+    final String expected6 = "INTEGER NOT NULL ARRAY NOT NULL ARRAY NOT NULL";
     sql("select cast(\"intArrayArrayType\" as int array array) from COMPLEXTYPES.CTC_T1")
         .withExtendedCatalog()
-        .columnType("INTEGER NOT NULL ARRAY NOT NULL ARRAY NOT NULL");
+        .columnType(expected6);
+    sql("select cast(\"intArrayArrayType\" as array<array<int>>) from COMPLEXTYPES.CTC_T1")
+        .withExtendedCatalog()
+        .columnType(expected6);
+
+    final String expected7 = "VARCHAR(5) NOT NULL ARRAY NOT NULL ARRAY NOT NULL";
     sql("select cast(\"varchar5ArrayArrayType\" as varchar(5) array array) "
         + "from COMPLEXTYPES.CTC_T1")
         .withExtendedCatalog()
-        .columnType("VARCHAR(5) NOT NULL ARRAY NOT NULL ARRAY NOT NULL");
+        .columnType(expected7);
+    sql("select cast(\"varchar5ArrayArrayType\" as array<array<varchar(5)>>) "
+        + "from COMPLEXTYPES.CTC_T1")
+        .withExtendedCatalog()
+        .columnType(expected7);
+
     // test multiset type.
+    final String expected8 = "INTEGER NOT NULL MULTISET NOT NULL";
     sql("select cast(\"intMultisetType\" as int multiset) from COMPLEXTYPES.CTC_T1")
         .withExtendedCatalog()
-        .columnType("INTEGER NOT NULL MULTISET NOT NULL");
+        .columnType(expected8);
+    sql("select cast(\"intMultisetType\" as multiset<int>) from COMPLEXTYPES.CTC_T1")
+        .withExtendedCatalog()
+        .columnType(expected8);
+
+    final String expected9 = "VARCHAR(5) NOT NULL MULTISET NOT NULL";
     sql("select cast(\"varchar5MultisetType\" as varchar(5) multiset) from COMPLEXTYPES.CTC_T1")
         .withExtendedCatalog()
-        .columnType("VARCHAR(5) NOT NULL MULTISET NOT NULL");
+        .columnType(expected9);
+    sql("select cast(\"varchar5MultisetType\" as multiset<varchar(5)>) from COMPLEXTYPES.CTC_T1")
+        .withExtendedCatalog()
+        .columnType(expected9);
+
+    final String expected10 = "INTEGER NOT NULL MULTISET NOT NULL ARRAY NOT NULL";
     sql("select cast(\"intMultisetArrayType\" as int multiset array) from COMPLEXTYPES.CTC_T1")
         .withExtendedCatalog()
-        .columnType("INTEGER NOT NULL MULTISET NOT NULL ARRAY NOT NULL");
+        .columnType(expected10);
+    sql("select cast(\"intMultisetArrayType\" as array<multiset<int>>) from COMPLEXTYPES.CTC_T1")
+        .withExtendedCatalog()
+        .columnType(expected10);
+
+    final String expected11 = "VARCHAR(5) NOT NULL MULTISET NOT NULL ARRAY NOT NULL";
     sql("select cast(\"varchar5MultisetArrayType\" as varchar(5) multiset array) "
         + "from COMPLEXTYPES.CTC_T1")
         .withExtendedCatalog()
-        .columnType("VARCHAR(5) NOT NULL MULTISET NOT NULL ARRAY NOT NULL");
+        .columnType(expected11);
+    sql("select cast(\"varchar5MultisetArrayType\" as array<multiset<varchar(5)>>) "
+        + "from COMPLEXTYPES.CTC_T1")
+        .withExtendedCatalog()
+        .columnType(expected11);
+
     // test row type nested in collection type.
+    final String expected12 = "RecordType(INTEGER NOT NULL ARRAY NOT NULL MULTISET NOT NULL F0, "
+        + "VARCHAR(5) NOT NULL ARRAY NOT NULL F1) NOT NULL "
+        + "ARRAY NOT NULL MULTISET NOT NULL";
     sql("select cast(\"rowArrayMultisetType\" as row(f0 int array multiset, "
         + "f1 varchar(5) array) array multiset) "
         + "from COMPLEXTYPES.CTC_T1")
         .withExtendedCatalog()
-        .columnType("RecordType(INTEGER NOT NULL ARRAY NOT NULL MULTISET NOT NULL F0, "
-            + "VARCHAR(5) NOT NULL ARRAY NOT NULL F1) NOT NULL "
-            + "ARRAY NOT NULL MULTISET NOT NULL");
+        .columnType(expected12);
+    sql("select cast(\"rowArrayMultisetType\" as multiset<array<row(f0 multiset<array<int>>, "
+        + "f1 array<varchar(5)>)>>) "
+        + "from COMPLEXTYPES.CTC_T1")
+        .withExtendedCatalog()
+        .columnType(expected12);
+
     // test UDT collection type.
+    final String fails = "Unknown identifier 'MYUDT'";
     sql("select cast(a as ^MyUDT^ array multiset) from COMPLEXTYPES.CTC_T1")
         .withExtendedCatalog()
-        .fails("Unknown identifier 'MYUDT'");
+        .fails(fails);
+    sql("select cast(a as multiset<array<^MyUDT^>>) from COMPLEXTYPES.CTC_T1")
+        .withExtendedCatalog()
+        .fails(fails);
   }
 
   @Test void testCastAsRowType() {

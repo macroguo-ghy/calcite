@@ -5657,12 +5657,18 @@ SqlDataTypeSpec DataType() :
     final Span s;
 }
 {
-    typeName = TypeName() {
-        s = Span.of(typeName.getParserPos());
-    }
     (
-        typeName = CollectionsTypeName(typeName)
-    )*
+        typeName = CollectionsTypeName2() {
+            s = Span.of(typeName.getParserPos());
+        }
+    |
+        typeName = TypeName() {
+            s = Span.of(typeName.getParserPos());
+        }
+        (
+            typeName = CollectionsTypeName(typeName)
+        )*
+    )
     {
         return new SqlDataTypeSpec(typeName, s.add(typeName.getParserPos()).pos());
     }
@@ -5870,6 +5876,30 @@ SqlTypeNameSpec CollectionsTypeName(SqlTypeNameSpec elementTypeName) :
     |
         <ARRAY> { collectionTypeName = SqlTypeName.ARRAY; }
     )
+    {
+        return new SqlCollectionTypeNameSpec(elementTypeName,
+                collectionTypeName, getPos());
+    }
+}
+
+SqlTypeNameSpec CollectionsTypeName2() :
+{
+    final SqlTypeName collectionTypeName;
+    final SqlTypeNameSpec elementTypeName;
+}
+{
+    (
+        <MULTISET> { collectionTypeName = SqlTypeName.MULTISET; }
+    |
+        <ARRAY> { collectionTypeName = SqlTypeName.ARRAY; }
+    )
+    <LT>
+    (
+        elementTypeName = CollectionsTypeName2()
+    |
+        elementTypeName = TypeName()
+    )
+    <GT>
     {
         return new SqlCollectionTypeNameSpec(elementTypeName,
                 collectionTypeName, getPos());
