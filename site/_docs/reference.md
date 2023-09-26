@@ -3044,6 +3044,7 @@ ddlStatement:
       createSchemaStatement
   |   createForeignSchemaStatement
   |   createTableStatement
+  |   createTableLikeStatement
   |   createViewStatement
   |   createMaterializedViewStatement
   |   createTypeStatement
@@ -3074,6 +3075,13 @@ createTableStatement:
       CREATE TABLE [ IF NOT EXISTS ] name
       [ '(' tableElement [, tableElement ]* ')' ]
       [ AS query ]
+
+createTableLikeStatement:
+      CREATE TABLE [ IF NOT EXISTS ] name LIKE sourceTable
+      [ likeOption [, likeOption ]* ]
+
+likeOption:
+      { INCLUDING | EXCLUDING } { DEFAULTS | GENERATED | ALL }
 
 createTypeStatement:
       CREATE [ OR REPLACE ] TYPE name AS
