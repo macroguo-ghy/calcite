@@ -16,26 +16,24 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql.validate.SqlValidatorScope;
+
 /**
- * Supported json encodings that could be passed to a
- * {@code JsonValueExpression}.
+ * Operator that represents a column in {@code JSON_TABLE} function.
  */
-public enum SqlJsonEncoding implements Symbolizable {
-  UTF8("UTF8"),
-  UTF16("UTF16"),
-  UTF32("UTF32");
-
-  private final String standardName;
-
-  SqlJsonEncoding(String standardName) {
-    this.standardName = standardName;
+public class SqlJsonTableColumnOperator
+    extends SqlSpecialOperator {
+  public SqlJsonTableColumnOperator(
+      String name,
+      SqlKind kind) {
+    super(name, kind);
   }
 
-  public String getStandardName() {
-    return standardName;
-  }
-
-  @Override public String toString() {
-    return getStandardName();
+  @Override public RelDataType deriveType(
+      SqlValidator validator, SqlValidatorScope scope, SqlCall call) {
+    assert call instanceof SqlJsonTableColumn;
+    return ((SqlJsonTableColumn) call).deriveType(validator);
   }
 }

@@ -11252,6 +11252,84 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         .columnType("BOOLEAN");
   }
 
+  @Test void testJsonTable() {
+    sql("SELECT jt.*\n"
+        + "    FROM emp, LATERAL TABLE (JSON_TABLE (emp.ename, 'lax $'\n"
+        + "                 COLUMNS ( name VARCHAR(30) PATH 'lax $.Name',\n"
+        + "                           NESTED PATH 'lax $.phoneNumber[*]'\n"
+        + "                           COLUMNS ( type VARCHAR(10) PATH 'lax $.type',\n"
+        + "                                       number CHAR(12) PATH 'lax $.number' ) )\n"
+        + ")) as jt")
+        .type("RecordType("
+            + "VARCHAR(30) NOT NULL NAME, "
+            + "VARCHAR(10) NOT NULL TYPE, "
+            + "CHAR(12) NOT NULL NUMBER) NOT NULL");
+
+    sql("SELECT jt.rowseq, jt.title\n"
+        + "from TABLE( JSON_TABLE ( 'json_doc', 'lax $.books[*]'\n"
+        + "COLUMNS ( rowSeq FOR ORDINALITY,\n"
+        + " title VARCHAR(30) PATH 'lax $.title'\n"
+        + "))) AS jt\n"
+        + "where rowseq = 1")
+        .type("RecordType("
+            + "INTEGER NOT NULL ROWSEQ, "
+            + "VARCHAR(30) NOT NULL TITLE) NOT NULL");
+
+    sql("SELECT *\n"
+        + "FROM emp,\n"
+        + "LATERAL TABLE( JSON_TABLE ( emp.ename, 'lax $'\n"
+        + "COLUMNS ( name VARCHAR(30) PATH 'lax $.Name',\n"
+        + "NESTED PATH 'lax $.books[*]'\n"
+        + "COLUMNS ( title VARCHAR(60) PATH 'lax $.title',\n"
+        + "NESTED PATH 'lax $.authorList[*]' AS A\n"
+        + "COLUMNS ( author1 VARCHAR(30) PATH 'lax $[0]',\n"
+        + " author2 VARCHAR(30) PATH 'lax $[1]'\n"
+        + ")))"
+        + ")) AS jt")
+        .type("RecordType("
+            + "INTEGER NOT NULL EMPNO, "
+            + "VARCHAR(20) NOT NULL ENAME, "
+            + "VARCHAR(10) NOT NULL JOB, "
+            + "INTEGER MGR, "
+            + "TIMESTAMP(0) NOT NULL HIREDATE, "
+            + "INTEGER NOT NULL SAL, "
+            + "INTEGER NOT NULL COMM, "
+            + "INTEGER NOT NULL DEPTNO, "
+            + "BOOLEAN NOT NULL SLACKER, "
+            + "VARCHAR(30) NOT NULL NAME, "
+            + "VARCHAR(60) NOT NULL TITLE, "
+            + "VARCHAR(30) NOT NULL AUTHOR1, "
+            + "VARCHAR(30) NOT NULL AUTHOR2) NOT NULL");
+
+    sql("SELECT jt.rowseq, jt.title\n"
+        + "FROM emp,\n"
+        + "LATERAL TABLE( JSON_TABLE ( emp.ename, 'lax $.books[*]'\n"
+        + "COLUMNS ( rowSeq FOR ORDINALITY,\n"
+        + " title VARCHAR(30) PATH 'lax $.title' DEFAULT 'default' ON EMPTY NULL ON ERROR,\n"
+        + " writer VARCHAR(100) PATH 'lax $.writer' NULL ON EMPTY ERROR ON ERROR"
+        + " ) ERROR ON ERROR\n"
+        + ")) AS jt\n"
+        + "WHERE emp.deptno = 111")
+        .type("RecordType("
+            + "INTEGER NOT NULL ROWSEQ, "
+            + "VARCHAR(30) NOT NULL TITLE) NOT NULL");
+
+    sql("select * from table(json_table('json_doc', 'lax ...'\n"
+        + "COLUMNS ( name VARCHAR(30) PATH 'lax $.Name',\n"
+        + "NESTED PATH 'lax $.books[*]'\n"
+        + "COLUMNS ( title VARCHAR(60) PATH 'lax $.title',\n"
+        + "NESTED PATH 'lax $.authorList[*]' AS A\n"
+        + "COLUMNS ( author1 VARCHAR(30) PATH 'lax $[0]',\n"
+        + " author2 VARCHAR(30) PATH 'lax $[1]'\n"
+        + ")))"
+        + ")) AS jt")
+        .type("RecordType("
+            + "VARCHAR(30) NOT NULL NAME, "
+            + "VARCHAR(60) NOT NULL TITLE, "
+            + "VARCHAR(30) NOT NULL AUTHOR1, "
+            + "VARCHAR(30) NOT NULL AUTHOR2) NOT NULL");
+  }
+
   @Test void testJsonQuery() {
     expr("json_query('{\"foo\":\"bar\"}', 'lax $')").ok();
     expr("json_query('{\"foo\":\"bar\"}', 'lax $')")

@@ -495,6 +495,7 @@ COLLATION_NAME,
 COLLATION_SCHEMA,
 **COLLECT**,
 **COLUMN**,
+COLUMNS,
 COLUMN_NAME,
 COMMAND_FUNCTION,
 COMMAND_FUNCTION_CODE,
@@ -701,6 +702,7 @@ JSON,
 **JSON_OBJECTAGG**,
 **JSON_QUERY**,
 **JSON_SCOPE**,
+**JSON_TABLE**,
 **JSON_VALUE**,
 K,
 KEY,
@@ -768,6 +770,7 @@ NANOSECOND,
 **NATURAL**,
 **NCHAR**,
 **NCLOB**,
+NESTED,
 NESTING,
 **NEW**,
 **NEXT**,
@@ -2146,6 +2149,59 @@ each row in the original table to a window. The output table has all
 the same columns as the original table plus two additional columns `window_start`
 and `window_end`, which represent the start and end of the window interval, respectively.
 
+#### JSON_TABLE
+
+JSON_TABLE is a function that takes JSON data as input and generates relational data for valid input data.
+It has three parameters:
+- The JSON value on which to operate.
+- An SQL/JSON path expression to specify zero or more rows.
+- A COLUMNS clause to specify the shape of the output table.
+The complete syntax for JSON_TABLE is complex, because of the support for nested COLUMNS clauses.
+Therefore the syntax will be presented in stages.
+
+| Operator syntax      | Description
+|:-------------------- |:-----------
+| JSON_TABLE(jsonValue, path columns [ { EMPTY | ERROR } ON ERROR ] ) | Extracts data from a *jsonValue* and returns it as a relational table having the specified *columns*.
+
+{% highlight sql %}
+jsonTable:
+      JSON_TABLE '(' jsonValue, path columns [ { EMPTY | ERROR } ON ERROR ] ')'
+
+columns:
+      COLUMNS '(' jsonTableColumnDefinition [ {, jsonTableColumnDefinition } ]* ')'
+
+jsonTableColumnDefinition:
+      name FOR ORDINALITY
+      | name type PATH path [ { ERROR | NULL | DEFAULT expression } ON {EMPTY | ERROR} ]*
+      | nestedColumns
+
+nestedColumns:
+      NESTED [ PATH ] path [ AS alias ] columns
+{% endhighlight %}
+
+Here is an example:
+
+{% highlight sql %}
+SELECT
+  *
+FROM
+  TABLE(
+    JSON_TABLE(
+      'json_doc',
+      'lax $.books[*]' COLUMNS (
+        name VARCHAR(30) PATH 'lax $.Name',
+        NESTED PATH 'lax $.books[*]' COLUMNS (
+          title VARCHAR(60) PATH 'lax $.title',
+          NESTED PATH 'lax $.authorList[*]' AS A COLUMNS (
+            author1 VARCHAR(30) PATH 'lax $[0]',
+            author2 VARCHAR(30) PATH 'lax $[1]'
+          )
+        )
+      )
+    )
+  ) AS jt;
+{% endhighlight %}
+
 ### Grouped window functions
 **warning**: grouped window functions are deprecated.
 
@@ -2561,10 +2617,6 @@ Comparison:
 |JSON QUERY WITHOUT ARRAY WRAPPER            | error       | [1, 2]      | error
 |JSON QUERY WITH UNCONDITIONAL ARRAY WRAPPER | [ "[1,2]" ] | [ [1,2] ]   | [ "hi" ]
 |JSON QUERY WITH CONDITIONAL ARRAY WRAPPER   | [ "[1,2]" ] | [1,2]       | [ "hi" ]
-
-Not implemented:
-
-* JSON_TABLE
 
 #### Constructor Functions
 

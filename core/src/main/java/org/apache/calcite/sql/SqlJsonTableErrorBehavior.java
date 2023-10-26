@@ -17,25 +17,9 @@
 package org.apache.calcite.sql;
 
 /**
- * Supported json encodings that could be passed to a
- * {@code JsonValueExpression}.
+ * Categorizing the error behavior of {@code JSON_TABLE}.
  */
-public enum SqlJsonEncoding implements Symbolizable {
-  UTF8("UTF8"),
-  UTF16("UTF16"),
-  UTF32("UTF32");
-
-  private final String standardName;
-
-  SqlJsonEncoding(String standardName) {
-    this.standardName = standardName;
-  }
-
-  public String getStandardName() {
-    return standardName;
-  }
-
-  @Override public String toString() {
-    return getStandardName();
-  }
+public enum SqlJsonTableErrorBehavior implements Symbolizable {
+  EMPTY,
+  ERROR;
 }

@@ -322,6 +322,7 @@ public class SqlParserTest {
       "JSON_OBJECTAGG",                                                    "c",
       "JSON_QUERY",                                                        "c",
       "JSON_SCOPE",                                                        "c",
+      "JSON_TABLE",                                                        "c",
       "JSON_VALUE",                                                        "c",
       "KEEP",                                              "2011",
       "KEY",                           "92", "99",
@@ -8849,6 +8850,92 @@ public class SqlParserTest {
         .ok("('[]' IS NOT JSON ARRAY)");
     expr("'100' is not json scalar")
         .ok("('100' IS NOT JSON SCALAR)");
+  }
+
+  @Test void testJsonTable() {
+
+    sql("SELECT jt.rowseq, jt.title\n"
+        + "FROM bookclub,\n"
+        + "LATERAL TABLE( JSON_TABLE ( bookclub.jcol, 'lax $.books[*]'\n"
+        + "COLUMNS ( rowSeq FOR ORDINALITY,\n"
+        + " title VARCHAR(30) PATH 'lax $.title'\n"
+        + "))) AS jt\n"
+        + "WHERE bookclub.ID = 111")
+        .ok("SELECT `JT`.`ROWSEQ`, `JT`.`TITLE`\n"
+            + "FROM `BOOKCLUB`,\n"
+            + "LATERAL TABLE(JSON_TABLE(`BOOKCLUB`.`JCOL`, 'lax $.books[*]'\n"
+            + "COLUMNS (\n"
+            + "`ROWSEQ` FOR ORDINALITY,\n"
+            + "`TITLE` VARCHAR(30) PATH 'lax $.title')\n"
+            + "EMPTY ON ERROR\n"
+            + ")) AS `JT`\n"
+            + "WHERE (`BOOKCLUB`.`ID` = 111)");
+
+    sql("SELECT bookclub.id, jt.name, jt.type, jt.number\n"
+        + "    FROM bookclub,\n"
+        + "        LATERAL TABLE (JSON_TABLE ( bookclub.jcol, 'lax $'\n"
+        + "                     COLUMNS ( name VARCHAR(30) PATH 'lax $.Name',\n"
+        + "                               NESTED PATH 'lax $.phoneNumber[*]'\n"
+        + "                               COLUMNS ( type VARCHAR(10) PATH 'lax $.type',\n"
+        + "                                           number CHAR(12) PATH 'lax $.number' ) )\n"
+        + ")) AS jt")
+        .ok("SELECT `BOOKCLUB`.`ID`, `JT`.`NAME`, `JT`.`TYPE`, `JT`.`NUMBER`\n"
+            + "FROM `BOOKCLUB`,\n"
+            + "LATERAL TABLE(JSON_TABLE(`BOOKCLUB`.`JCOL`, 'lax $'\n"
+            + "COLUMNS (\n"
+            + "`NAME` VARCHAR(30) PATH 'lax $.Name',\n"
+            + "NESTED PATH 'lax $.phoneNumber[*]'\n"
+            + "COLUMNS (\n"
+            + "`TYPE` VARCHAR(10) PATH 'lax $.type',\n"
+            + "`NUMBER` CHAR(12) PATH 'lax $.number'))\n"
+            + "EMPTY ON ERROR\n"
+            + ")) AS `JT`");
+
+    sql("SELECT bookclub.id, jt.name, jt.title, jt.author1\n"
+        + "FROM bookclub,\n"
+        + "LATERAL TABLE( JSON_TABLE ( bookclub.jcol, 'lax $'\n"
+        + "COLUMNS ( name VARCHAR(30) PATH 'lax $.Name',\n"
+        + "NESTED PATH 'lax $.books[*]'\n"
+        + "COLUMNS ( title VARCHAR(60) PATH 'lax $.title',\n"
+        + "NESTED PATH 'lax $.authorList[*]' AS A\n"
+        + "COLUMNS ( author1 VARCHAR(30) PATH 'lax $[0]',\n"
+        + " author2 VARCHAR(30) PATH 'lax $[1]'\n"
+        + ")))"
+        + ")) AS jt")
+        .ok("SELECT `BOOKCLUB`.`ID`, `JT`.`NAME`, `JT`.`TITLE`, `JT`.`AUTHOR1`\n"
+            + "FROM `BOOKCLUB`,\n"
+            + "LATERAL TABLE(JSON_TABLE(`BOOKCLUB`.`JCOL`, 'lax $'\n"
+            + "COLUMNS (\n"
+            + "`NAME` VARCHAR(30) PATH 'lax $.Name',\n"
+            + "NESTED PATH 'lax $.books[*]'\n"
+            + "COLUMNS (\n"
+            + "`TITLE` VARCHAR(60) PATH 'lax $.title',\n"
+            + "NESTED PATH 'lax $.authorList[*]' AS `A`\n"
+            + "COLUMNS (\n"
+            + "`AUTHOR1` VARCHAR(30) PATH 'lax $[0]',\n"
+            + "`AUTHOR2` VARCHAR(30) PATH 'lax $[1]')))\n"
+            + "EMPTY ON ERROR\n"
+            + ")) AS `JT`");
+
+    sql("SELECT jt.rowseq, jt.title\n"
+        + "FROM bookclub,\n"
+        + "LATERAL TABLE( JSON_TABLE ( bookclub.jcol, 'lax $.books[*]'\n"
+        + "COLUMNS ( rowSeq FOR ORDINALITY,\n"
+        + " title VARCHAR(30) PATH 'lax $.title' DEFAULT 'default' ON EMPTY NULL ON ERROR,\n"
+        + " writer VARCHAR(100) PATH 'lax $.writer' NULL ON EMPTY ERROR ON ERROR"
+        + " ) ERROR ON ERROR\n"
+        + ")) AS jt\n"
+        + "WHERE bookclub.ID = 111")
+        .ok("SELECT `JT`.`ROWSEQ`, `JT`.`TITLE`\n"
+            + "FROM `BOOKCLUB`,\n"
+            + "LATERAL TABLE(JSON_TABLE(`BOOKCLUB`.`JCOL`, 'lax $.books[*]'\n"
+            + "COLUMNS (\n"
+            + "`ROWSEQ` FOR ORDINALITY,\n"
+            + "`TITLE` VARCHAR(30) PATH 'lax $.title' DEFAULT 'default' ON EMPTY NULL ON ERROR,\n"
+            + "`WRITER` VARCHAR(100) PATH 'lax $.writer' NULL ON EMPTY ERROR ON ERROR)\n"
+            + "ERROR ON ERROR\n"
+            + ")) AS `JT`\n"
+            + "WHERE (`BOOKCLUB`.`ID` = 111)");
   }
 
   @Test void testParseWithReader() throws Exception {

@@ -815,6 +815,12 @@ public enum SqlKind {
   /** {@code JSON} type function. */
   JSON_TYPE,
 
+  /** {@code JSON_TABLE_COLUMN} operator. */
+  JSON_TABLE_COLUMN,
+
+  /** The {@code JSON_TABLE} table function. */
+  JSON_TABLE,
+
   /** {@code UNNEST} operator. */
   UNNEST,
 

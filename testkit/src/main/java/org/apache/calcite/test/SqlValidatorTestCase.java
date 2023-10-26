@@ -54,6 +54,7 @@ public class SqlValidatorTestCase {
    * Default catalog: {@link org.apache.calcite.test.catalog.MockCatalogReaderSimple#init()}.
    */
   public final SqlValidatorFixture sql(String sql) {
+    System.out.println(sql);
     return fixture().withSql(sql);
   }
 

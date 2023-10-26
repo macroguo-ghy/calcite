@@ -16,26 +16,27 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.validate.SqlValidator;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 /**
- * Supported json encodings that could be passed to a
- * {@code JsonValueExpression}.
+ * Base class for {@code JSON_TABLE} column specifications.
  */
-public enum SqlJsonEncoding implements Symbolizable {
-  UTF8("UTF8"),
-  UTF16("UTF16"),
-  UTF32("UTF32");
+public abstract class SqlJsonTableColumn extends SqlCall {
+  final @Nullable SqlIdentifier name;
 
-  private final String standardName;
-
-  SqlJsonEncoding(String standardName) {
-    this.standardName = standardName;
+  SqlJsonTableColumn(SqlParserPos pos, @Nullable SqlIdentifier name) {
+    super(pos);
+    this.name = name;
   }
 
-  public String getStandardName() {
-    return standardName;
+  @Override public SqlOperator getOperator() {
+    return new SqlJsonTableColumnOperator(
+        SqlKind.JSON_TABLE_COLUMN.name(), SqlKind.JSON_TABLE_COLUMN);
   }
 
-  @Override public String toString() {
-    return getStandardName();
-  }
+  public abstract RelDataType deriveType(SqlValidator validator);
 }

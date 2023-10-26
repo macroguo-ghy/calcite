@@ -70,6 +70,12 @@ import org.apache.calcite.sql.SqlJsonExistsErrorBehavior;
 import org.apache.calcite.sql.SqlJsonEmptyOrError;
 import org.apache.calcite.sql.SqlJsonQueryEmptyOrErrorBehavior;
 import org.apache.calcite.sql.SqlJsonQueryWrapperBehavior;
+import org.apache.calcite.sql.SqlJsonTableColumn;
+import org.apache.calcite.sql.SqlJsonTableErrorBehavior;
+import org.apache.calcite.sql.SqlJsonTableFormattedColumn;
+import org.apache.calcite.sql.SqlJsonTableNestedColumns;
+import org.apache.calcite.sql.SqlJsonTableOrdinalityColumn;
+import org.apache.calcite.sql.SqlJsonTableRegularColumn;
 import org.apache.calcite.sql.SqlJsonValueEmptyOrErrorBehavior;
 import org.apache.calcite.sql.SqlJsonValueReturning;
 import org.apache.calcite.sql.SqlKind;
@@ -2402,7 +2408,10 @@ SqlNode TableFunctionCall() :
             funcType = SqlFunctionCategory.USER_DEFINED_TABLE_SPECIFIC_FUNCTION;
         }
     ]
-    call = NamedRoutineCall(funcType, ExprContext.ACCEPT_CURSOR)
+    (
+        call = NamedRoutineCall(funcType, ExprContext.ACCEPT_CURSOR)
+    |   call = JsonTableFunctionCall()
+    )
     <RPAREN>
     {
         return SqlStdOperatorTable.COLLECTION_TABLE.createCall(s.end(this), call);
@@ -6846,6 +6855,159 @@ SqlCall JsonArrayAggFunctionCall() :
     }
 }
 
+SqlCall JsonTableFunctionCall() :
+{
+    final List<SqlNode> args = new ArrayList<SqlNode>();
+    final Span span;
+    SqlNode behavior = null;
+    final List<SqlNode> commonSyntax;
+    final List<SqlNode> columns = new ArrayList<SqlNode>();
+}
+{
+    <JSON_TABLE> { span = span(); }
+    <LPAREN>
+    commonSyntax = JsonApiCommonSyntax() { args.addAll(commonSyntax); }
+    JsonTableColumnsClause(columns) {
+        args.addAll(columns);
+    }
+    // TODO: plan
+    [
+        behavior = JsonTableErrorBehavior()
+        <ON> <ERROR>
+    ] {
+        args.add(behavior == null ? SqlJsonTableErrorBehavior.EMPTY.symbol(getPos()) : behavior);
+    }
+    <RPAREN> {
+        return SqlStdOperatorTable.JSON_TABLE.createCall(span.end(this), args);
+    }
+}
+
+void JsonTableColumnsClause(List<SqlNode> args) :
+{
+    SqlNode e;
+}
+{
+    <COLUMNS>
+    <LPAREN>
+    e = JsonTableColumnDefinition() { args.add(e); }
+    (
+        <COMMA>
+        e = JsonTableColumnDefinition() { args.add(e); }
+    )*
+    <RPAREN>
+}
+
+SqlNode JsonTableColumnDefinition() :
+{
+    final SqlNode e;
+}
+{
+
+    LOOKAHEAD(3) e = JsonTableNestedColumns() { return e; }
+|   LOOKAHEAD(SimpleIdentifier() DataType() <FORMAT>) e = JsonTableFormattedColumnDefinition() { return e;}
+|   LOOKAHEAD(2) e = JsonTableOrdinalityColumnDefinition() { return e; }
+|   LOOKAHEAD(SimpleIdentifier() DataType()) e = JsonTableRegularColumnDefinition() { return e; }
+}
+
+
+SqlNode JsonTableErrorBehavior() :
+{
+}
+{
+    <ERROR> { return SqlJsonTableErrorBehavior.ERROR.symbol(getPos()); }
+|   <EMPTY> { return SqlJsonTableErrorBehavior.EMPTY.symbol(getPos()); }
+}
+
+SqlJsonTableOrdinalityColumn JsonTableOrdinalityColumnDefinition() :
+{
+    final SqlIdentifier name;
+}
+{
+    name = SimpleIdentifier()
+    <FOR> <ORDINALITY>
+    {
+        return new SqlJsonTableOrdinalityColumn(getPos(), name);
+    }
+}
+
+SqlJsonTableRegularColumn JsonTableRegularColumnDefinition() :
+{
+    final Span s;
+    final SqlIdentifier name;
+    final SqlDataTypeSpec type;
+    SqlNode path = null;
+    final List<SqlNode> behaviors = new ArrayList<SqlNode>();
+    List<SqlNode> behavior;
+}
+{
+    name = SimpleIdentifier() { s = span(); }
+    type = DataType()
+    [
+        <PATH> path = StringLiteral()
+    ]
+    (
+        behavior = JsonValueEmptyOrErrorBehavior() {
+            behaviors.addAll(behavior);
+        }
+    )*
+    {
+        return new SqlJsonTableRegularColumn(s.end(this), name, type, path,
+            new SqlNodeList(behaviors, s.end(this)));
+    }
+}
+
+SqlJsonTableFormattedColumn JsonTableFormattedColumnDefinition() :
+{
+    final Span s;
+    final SqlIdentifier name;
+    final SqlDataTypeSpec type;
+    final SqlJsonEncoding encoding;
+    SqlNode path = null;
+    SqlNode wrapper = null;
+    final List<SqlNode> behaviors = new ArrayList<SqlNode>();
+    List<SqlNode> behavior;
+}
+{
+    name = SimpleIdentifier() { s = span(); }
+    type = DataType()
+    <FORMAT> encoding = JsonRepresentation()
+    [
+        <PATH> path = StringLiteral()
+    ]
+    [
+        wrapper = JsonQueryWrapperBehavior() <WRAPPER>
+    ]
+    // todo quotes
+    (
+        behavior = JsonValueEmptyOrErrorBehavior() {
+            behaviors.addAll(behavior);
+        }
+    )*
+    {
+        return new SqlJsonTableFormattedColumn(
+            s.end(this), name, type, encoding.symbol(s.end(this)), path,
+            wrapper, new SqlNodeList(behaviors, s.end(this)));
+    }
+}
+
+SqlJsonTableNestedColumns JsonTableNestedColumns() :
+{
+    final SqlNode path;
+    SqlIdentifier name = null;
+    final List<SqlNode> children = new ArrayList<SqlNode>();
+}
+{
+    <NESTED> [<PATH>]
+    path = StringLiteral()
+    [
+        <AS> name = SimpleIdentifier()
+    ]
+    JsonTableColumnsClause(children)
+    {
+        return new SqlJsonTableNestedColumns(getPos(), name, path, new SqlNodeList(children, getPos()));
+    }
+}
+
  /**
  * Parses the CONTAINS_SUBSTR function, which has a unique optional third argument "JSON_SCOPE"
  * that specifies what scope to search if the first argument is a JSON string.
@@ -7963,6 +8125,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < COLLATION_SCHEMA: "COLLATION_SCHEMA" >
 |   < COLLECT: "COLLECT" >
 |   < COLUMN: "COLUMN" >
+|   < COLUMNS: "COLUMNS" >
 |   < COLUMN_NAME: "COLUMN_NAME" >
 |   < COMMAND_FUNCTION: "COMMAND_FUNCTION" >
 |   < COMMAND_FUNCTION_CODE: "COMMAND_FUNCTION_CODE" >
@@ -8169,6 +8332,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < JSON_OBJECTAGG: "JSON_OBJECTAGG">
 |   < JSON_QUERY: "JSON_QUERY" >
 |   < JSON_SCOPE: "JSON_SCOPE" >
+|   < JSON_TABLE: "JSON_TABLE" >
 |   < JSON_VALUE: "JSON_VALUE" >
 |   < K: "K" >
 |   < KEY: "KEY" >
@@ -8235,6 +8399,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < NATURAL: "NATURAL" >
 |   < NCHAR: "NCHAR" >
 |   < NCLOB: "NCLOB" >
+|   < NESTED: "NESTED" >
 |   < NESTING: "NESTING" >
 |   < NEW: "NEW" >
 |   < NEXT: "NEXT" >
