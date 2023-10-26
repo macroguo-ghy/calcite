@@ -1109,11 +1109,12 @@ name will have been converted to upper case also.
 | SMALLINT    | 2 byte signed integer     | Range is -32768 to 32767
 | INTEGER, INT | 4 byte signed integer    | Range is -2147483648 to 2147483647
 | BIGINT      | 8 byte signed integer     | Range is -9223372036854775808 to 9223372036854775807
-| DECIMAL(p, s) | Fixed point             | Example: 123.45 is a DECIMAL(5, 2) value.
-| NUMERIC     | Fixed point               |
-| REAL, FLOAT | 4 byte floating point     | 6 decimal digits precision
-| DOUBLE      | 8 byte floating point     | 15 decimal digits precision
-| CHAR(n), CHARACTER(n) | Fixed-width character string | 'Hello', '' (empty string), _latin1'Hello', n'Hello', _UTF16'Hello', 'Hello' 'there' (literal split into multiple parts)
+| DECIMAL(p, s) | Fixed point             | Example: 123.45 and DECIMAL '123.45' are identical values, and have type DECIMAL(5, 2)
+| NUMERIC(p, s) | Fixed point             | A synonym for DECIMAL
+| REAL        | 4 byte floating point     | 6 decimal digits precision; examples: CAST(1.2 AS REAL), CAST('Infinity' AS REAL)
+| DOUBLE      | 8 byte floating point     | 15 decimal digits precision; examples: 1.4E2, CAST('-Infinity' AS DOUBLE), CAST('NaN' AS DOUBLE)
+| FLOAT       | 8 byte floating point     | A synonym for DOUBLE
+| CHAR(n), CHARACTER(n) | Fixed-width character string | 'Hello', '' (empty string), _latin1'Hello', n'Hello', _UTF16'Hello', 'Hello' 'there' (literal split into multiple parts), e'Hello\nthere' (literal containing C-style escapes)
 | VARCHAR(n), CHARACTER VARYING(n) | Variable-length character string | As CHAR(n)
 | BINARY(n)   | Fixed-width binary string | x'45F0AB', x'' (empty binary string), x'AB' 'CD' (multi-part binary string literal)
 | VARBINARY(n), BINARY VARYING(n) | Variable-length binary string | As BINARY(n)
@@ -2520,11 +2521,30 @@ semantics.
 | b | ARRAY_CONCAT(array [, array ]*)                | Concatenates one or more arrays. If any input argument is `NULL` the function returns `NULL`
 | b | ARRAY_LENGTH(array)                            | Synonym for `CARDINALITY`
 | b | ARRAY_REVERSE(array)                           | Reverses elements of *array*
-| o | CHR(integer) | Returns the character having the binary equivalent to *integer* as a CHAR value
-| o | COSH(numeric)                                  | Returns the hyperbolic cosine of *numeric*
-| o | CONCAT(string, string)                         | Concatenates two strings
-| m p | CONCAT(string [, string ]*)                  | Concatenates two or more strings
-| m | COMPRESS(string)                               | Compresses a string using zlib compression and returns the result as a binary string.
+| s | ARRAY_SIZE(array)                              | Synonym for `CARDINALITY`
+| b | ARRAY_TO_STRING(array, delimiter [, nullText ])| Returns a concatenation of the elements in *array* as a STRING and take *delimiter* as the delimiter. If the *nullText* parameter is used, the function replaces any `NULL` values in the array with the value of *nullText*. If the *nullText* parameter is not used, the function omits the `NULL` value and its preceding delimiter
+| s | ARRAY_UNION(array1, array2)                    | Returns an array of the elements in the union of *array1* and *array2*, without duplicates
+| s | ARRAYS_OVERLAP(array1, array2)                 | Returns true if *array1 contains at least a non-null element present also in *array2*. If the arrays have no common element and they are both non-empty and either of them contains a null element null is returned, false otherwise
+| s | ARRAYS_ZIP(array [, array ]*)                  | Returns a merged *array* of structs in which the N-th struct contains all N-th values of input arrays
+| s | SORT_ARRAY(array [, ascendingOrder])           | Sorts the *array* in ascending or descending order according to the natural ordering of the array elements. The default order is ascending if *ascendingOrder* is not specified. Null elements will be placed at the beginning of the returned array in ascending order or at the end of the returned array in descending order
+| * | ASINH(numeric)                                 | Returns the inverse hyperbolic sine of *numeric*
+| * | ATANH(numeric)                                 | Returns the inverse hyperbolic tangent of *numeric*
+| s | BIT_LENGTH(binary)                             | Returns the bit length of *binary*
+| s | BIT_LENGTH(string)                             | Returns the bit length of *string*
+| s | BIT_GET(value, position)                       | Returns the bit (0 or 1) value at the specified *position* of numeric *value*. The positions are numbered from right to left, starting at zero. The *position* argument cannot be negative
+| b | CEIL(value)                                    | Similar to standard `CEIL(value)` except if *value* is an integer type, the return type is a double
+| m s | CHAR(integer)                                | Returns the character whose ASCII code is *integer* % 256, or null if *integer* &lt; 0
+| b o p | CHR(integer)                               | Returns the character whose UTF-8 code is *integer*
+| b | CODE_POINTS_TO_BYTES(integers)                 | Converts *integers*, an array of integers between 0 and 255 inclusive, into bytes; throws error if any element is out of range
+| b | CODE_POINTS_TO_STRING(integers)                | Converts *integers*, an array of integers between 0 and 0xD7FF or between 0xE000 and 0x10FFFF inclusive, into string; throws error if any element is out of range
+| o | CONCAT(string, string)                         | Concatenates two strings, returns null only when both string arguments are null, otherwise treats null as empty string
+| b m | CONCAT(string [, string ]*)                  | Concatenates one or more strings, returns null if any of the arguments is null
+| p q | CONCAT(string [, string ]*)                  | Concatenates one or more strings, null is treated as empty string
+| m p | CONCAT_WS(separator, str1 [, string ]*)      | Concatenates one or more strings, returns null only when separator is null, otherwise treats null arguments as empty strings
+| q | CONCAT_WS(separator, str1, str2 [, string ]*)  | Concatenates two or more strings, requires at least 3 arguments (up to 254), treats null arguments as empty strings
+| m | COMPRESS(string)                               | Compresses a string using zlib compression and returns the result as a binary string
+| b | CONTAINS_SUBSTR(expression, string [ , json_scope =&gt; json_scope_value ]) | Returns whether *string* exists as a substring in *expression*. Optional *json_scope* argument specifies what scope to search if *expression* is in JSON format. Returns NULL if a NULL exists in *expression* that does not result in a match
+| q | CONVERT(type, expression [ , style ])          | Equivalent to `CAST(expression AS type)`; ignores the *style* operand
 | p | CONVERT_TIMEZONE(tz1, tz2, datetime)           | Converts the timezone of *datetime* from *tz1* to *tz2*
 | b | CURRENT_DATETIME([timezone])                   | Returns the current time as a TIMESTAMP from *timezone*
 | m | DAYNAME(datetime)                              | Returns the name, in the connection's locale, of the weekday in *datetime*; for example, it returns '星期日' for both DATE '2020-02-10' and TIMESTAMP '2020-02-10 10:10:10'
