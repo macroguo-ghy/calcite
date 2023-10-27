@@ -4476,6 +4476,27 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).ok();
   }
 
+  @Test void testJsonTableFunction() {
+    final String sql = "SELECT jt.rowseq, jt.title\n"
+        + "from TABLE( JSON_TABLE ( 'json_doc', 'lax $.books[*]'\n"
+        + "COLUMNS ( rowSeq FOR ORDINALITY,\n"
+        + " title VARCHAR(30) PATH 'lax $.title'\n"
+        + "))) AS jt\n"
+        + "where rowseq = 1";
+    sql(sql).ok();
+  }
+
+  @Test void testJsonTableFunction2() {
+    final String sql = "SELECT jt.*\n"
+        + "FROM emp, LATERAL TABLE (JSON_TABLE (emp.ename, 'lax $'\n"
+        + "COLUMNS ( name VARCHAR(30) PATH 'lax $.Name',\n"
+        + "NESTED PATH 'lax $.phoneNumber[*]'\n"
+        + "COLUMNS ( type VARCHAR(10) PATH 'lax $.type',\n"
+        + "number CHAR(12) PATH 'lax $.number' ) )\n"
+        + ")) as jt";
+    sql(sql).ok();
+  }
+
   @Test void testWithinGroup1() {
     final String sql = "select deptno,\n"
         + " collect(empno) within group (order by deptno, hiredate desc)\n"

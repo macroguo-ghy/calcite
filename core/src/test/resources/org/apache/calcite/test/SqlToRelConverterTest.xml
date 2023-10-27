@@ -4089,6 +4089,42 @@ LogicalProject(EXPR$0=[JSON_QUERY($1, 'lax $', FLAG(WITHOUT_ARRAY), FLAG(SqlJson
 ]]>
     </Resource>
   </TestCase>
+  <TestCase name="testJsonTableFunction">
+    <Resource name="sql">
+      <![CDATA[SELECT jt.rowseq, jt.title
+from TABLE( JSON_TABLE ( 'json_doc', 'lax $.books[*]'
+COLUMNS ( rowSeq FOR ORDINALITY,
+ title VARCHAR(30) PATH 'lax $.title'
+))) AS jt
+where rowseq = 1]]>
+    </Resource>
+    <Resource name="plan">
+      <![CDATA[
+LogicalProject(ROWSEQ=[$0], TITLE=[$1])
+  LogicalFilter(condition=[=($0, 1)])
+    LogicalTableFunctionScan(invocation=[JSON_TABLE('json_doc', 'lax $.books[*]', SqlJsonTableOrdinalityColumn(), SqlJsonTableRegularColumn('lax $.title'), FLAG(EMPTY))], rowType=[RecordType(INTEGER ROWSEQ, VARCHAR(30) TITLE)])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testJsonTableFunction2">
+    <Resource name="sql">
+      <![CDATA[SELECT jt.*
+FROM emp, LATERAL TABLE (JSON_TABLE (emp.ename, 'lax $'
+COLUMNS ( name VARCHAR(30) PATH 'lax $.Name',
+NESTED PATH 'lax $.phoneNumber[*]'
+COLUMNS ( type VARCHAR(10) PATH 'lax $.type',
+number CHAR(12) PATH 'lax $.number' ) )
+)) as jt]]>
+    </Resource>
+    <Resource name="plan">
+      <![CDATA[
+LogicalProject(NAME=[$9], TYPE=[$10], NUMBER=[$11])
+  LogicalCorrelate(correlation=[$cor0], joinType=[inner], requiredColumns=[{1}])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+    LogicalTableFunctionScan(invocation=[JSON_TABLE($cor0.ENAME, 'lax $', SqlJsonTableRegularColumn('lax $.Name'), SqlJsonTableNestedColumns('lax $.phoneNumber[*]', SqlJsonTableRegularColumn('lax $.type'), SqlJsonTableRegularColumn('lax $.number')), FLAG(EMPTY))], rowType=[RecordType(VARCHAR(30) NAME, VARCHAR(10) TYPE, CHAR(12) NUMBER)])
+]]>
+    </Resource>
+  </TestCase>
   <TestCase name="testJsonType">
     <Resource name="sql">
       <![CDATA[select json_type(ename)

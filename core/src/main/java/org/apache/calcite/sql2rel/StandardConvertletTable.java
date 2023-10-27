@@ -43,6 +43,9 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlIntervalLiteral;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlJdbcFunctionCall;
+import org.apache.calcite.sql.SqlJsonTableNestedColumns;
+import org.apache.calcite.sql.SqlJsonTableOrdinalityColumn;
+import org.apache.calcite.sql.SqlJsonTableRegularColumn;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
@@ -934,6 +937,33 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         cx.getValidator().getValidatedNodeType(call);
     return cx.getRexBuilder().makeCall(returnType, fun,
         ImmutableList.of(cx.getRexBuilder().makeLiteral(key)));
+  }
+
+  public RexNode convertJsonTableColumn(SqlRexContext cx, SqlJsonTableOrdinalityColumn column) {
+    return cx.getRexBuilder()
+        .makeCall(column.deriveType(cx.getValidator()), column.getOperator(), ImmutableList.of());
+  }
+
+  public RexNode convertJsonTableColumn(SqlRexContext cx, SqlJsonTableRegularColumn column) {
+    final List<RexNode> exprs = new ArrayList<>();
+    // exprs.add(cx.convertExpression(column.getOperandList().get(0))); // name
+    exprs.add(cx.convertExpression(column.getOperandList().get(2))); // path
+    for (SqlNode behavior : (SqlNodeList) column.getOperandList().get(3)) { // behaviors
+      exprs.add(cx.convertExpression(behavior));
+    }
+    return cx.getRexBuilder()
+        .makeCall(column.deriveType(cx.getValidator()), column.getOperator(), exprs);
+  }
+
+  public RexNode convertJsonTableColumn(SqlRexContext cx, SqlJsonTableNestedColumns columns) {
+    final List<RexNode> exprs = new ArrayList<>();
+    // exprs.add(cx.convertExpression(columns.getOperandList().get(0))); // name
+    exprs.add(cx.convertExpression(columns.getOperandList().get(1))); // path
+    for (SqlNode behavior : (SqlNodeList) columns.getOperandList().get(2)) { // children columns
+      exprs.add(cx.convertExpression(behavior));
+    }
+    return cx.getRexBuilder()
+        .makeCall(columns.deriveType(cx.getValidator()), columns.getOperator(), exprs);
   }
 
   public RexNode convertAggregateFunction(

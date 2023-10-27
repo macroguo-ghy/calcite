@@ -35,7 +35,7 @@ public abstract class SqlJsonTableColumn extends SqlCall {
 
   @Override public SqlOperator getOperator() {
     return new SqlJsonTableColumnOperator(
-        SqlKind.JSON_TABLE_COLUMN.name(), SqlKind.JSON_TABLE_COLUMN);
+        this.getClass().getSimpleName(), SqlKind.JSON_TABLE_COLUMN);
   }
 
   public abstract RelDataType deriveType(SqlValidator validator);
