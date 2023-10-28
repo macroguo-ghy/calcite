@@ -68,14 +68,16 @@ public class EnumerableTableFunctionScan extends TableFunctionScan
   }
 
   @Override public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
-    if (isImplementorDefined((RexCall) getCall())) {
+    if (isDefinedWindowTableFunction((RexCall) getCall())) {
       return tvfImplementorBasedImplement(implementor, pref);
+    } else if (isQueryable()) {
+      return defaultTableFunctionImplement(implementor, pref);
     } else {
       return defaultTableFunctionImplement(implementor, pref);
     }
   }
 
-  private static boolean isImplementorDefined(RexCall call) {
+  private static boolean isDefinedWindowTableFunction(RexCall call) {
     if (call.getOperator() instanceof SqlWindowTableFunction
         && RexImpTable.INSTANCE.get((SqlWindowTableFunction) call.getOperator()) != null) {
       return true;

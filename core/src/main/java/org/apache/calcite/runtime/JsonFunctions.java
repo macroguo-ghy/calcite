@@ -16,11 +16,14 @@
  */
 package org.apache.calcite.runtime;
 
+import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.sql.SqlJsonConstructorNullClause;
 import org.apache.calcite.sql.SqlJsonExistsErrorBehavior;
 import org.apache.calcite.sql.SqlJsonQueryEmptyOrErrorBehavior;
 import org.apache.calcite.sql.SqlJsonQueryWrapperBehavior;
+import org.apache.calcite.sql.SqlJsonTableColumn;
+import org.apache.calcite.sql.SqlJsonTableErrorBehavior;
 import org.apache.calcite.sql.SqlJsonValueEmptyOrErrorBehavior;
 import org.apache.calcite.util.Util;
 
@@ -328,6 +331,14 @@ public class JsonFunctions {
       return jsonQuery(
           jsonApiCommonSyntax(input, pathSpec),
           wrapperBehavior, emptyBehavior, errorBehavior);
+    }
+
+    public @Nullable Enumerable jsonTable(
+        String input,
+        String path,
+        List<SqlJsonTableColumn> columns,
+        SqlJsonTableErrorBehavior errorBehavior) {
+      return null;
     }
 
     public @Nullable String jsonQuery(JsonPathContext context,

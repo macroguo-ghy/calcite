@@ -21,6 +21,8 @@ import org.apache.calcite.sql.validate.SqlConformanceEnum;
 
 import net.hydromatic.quidem.Quidem;
 
+import org.junit.jupiter.api.Test;
+
 import java.sql.Connection;
 import java.util.Collection;
 
@@ -47,6 +49,10 @@ class CoreQuidemTest extends QuidemTest {
     // its files.
     final String first = "sql/agg.iq";
     return data(first);
+  }
+
+  @Test public void testTablefunc() throws Exception {
+    checkRun("sql/stream.iq");
   }
 
   @Override protected Quidem.ConnectionFactory createConnectionFactory() {

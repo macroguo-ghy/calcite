@@ -113,6 +113,7 @@ import org.apache.calcite.sql.SqlJsonConstructorNullClause;
 import org.apache.calcite.sql.SqlJsonExistsErrorBehavior;
 import org.apache.calcite.sql.SqlJsonQueryEmptyOrErrorBehavior;
 import org.apache.calcite.sql.SqlJsonQueryWrapperBehavior;
+import org.apache.calcite.sql.SqlJsonTableErrorBehavior;
 import org.apache.calcite.sql.SqlJsonValueEmptyOrErrorBehavior;
 
 import com.google.common.collect.ImmutableMap;
@@ -433,6 +434,8 @@ public enum BuiltInMethod {
       SqlJsonConstructorNullClause.class),
   JSON_ARRAYAGG_ADD(JsonFunctions.class, "jsonArrayAggAdd",
       List.class, Object.class, SqlJsonConstructorNullClause.class),
+  JSON_TABLE(JsonFunctions.StatefulFunction.class, "jsonTable",
+      String.class, String.class, List.class, SqlJsonTableErrorBehavior.class),
   IS_JSON_VALUE(JsonFunctions.class, "isJsonValue", String.class),
   IS_JSON_OBJECT(JsonFunctions.class, "isJsonObject", String.class),
   IS_JSON_ARRAY(JsonFunctions.class, "isJsonArray", String.class),

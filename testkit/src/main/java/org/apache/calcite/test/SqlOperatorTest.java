@@ -5038,6 +5038,11 @@ public class SqlOperatorTest {
 
   @Test void testJsonValue() {
     final SqlOperatorFixture f = fixture();
+
+    f.check("select * from table(json_table('{\"foo\":100}', 'lax $.foo' columns ("
+            + "foo integer path '$')))",
+        "INTEGER NOT NULL", "INTEGER NOT NULL");
+
     if (false) {
       f.checkFails("json_value('{\"foo\":100}', 'lax $.foo1' error on empty)",
           "(?s).*Empty result of JSON_VALUE function is not allowed.*",
