@@ -22,21 +22,39 @@ import org.apache.calcite.sql.validate.SqlValidator;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Objects;
+
 /**
  * Base class for {@code JSON_TABLE} column specifications.
  */
 public abstract class SqlJsonTableColumn extends SqlCall {
   final @Nullable SqlIdentifier name;
 
-  SqlJsonTableColumn(SqlParserPos pos, @Nullable SqlIdentifier name) {
+  final Type type;
+
+  RelDataType derivedType;
+
+  SqlJsonTableColumn(SqlParserPos pos, @Nullable SqlIdentifier name, Type type) {
     super(pos);
     this.name = name;
+    this.type = type;
   }
 
   @Override public SqlOperator getOperator() {
-    return new SqlJsonTableColumnOperator(
-        this.getClass().getSimpleName(), SqlKind.JSON_TABLE_COLUMN);
+    return new SqlJsonTableColumnOperator();
   }
 
   public abstract RelDataType deriveType(SqlValidator validator);
+
+  public RelDataType getType() {
+    return Objects.requireNonNull(derivedType, "derivedType");
+  }
+
+  public static enum Type
+      implements Symbolizable{
+    FORMATTED,
+    NESTED,
+    ORDINALITY,
+    REGULAR,
+  }
 }

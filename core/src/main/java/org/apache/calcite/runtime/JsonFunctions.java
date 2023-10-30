@@ -16,9 +16,12 @@
  */
 package org.apache.calcite.runtime;
 
+import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.sql.SqlJsonConstructorNullClause;
+import org.apache.calcite.sql.SqlJsonEmptyOrError;
 import org.apache.calcite.sql.SqlJsonExistsErrorBehavior;
 import org.apache.calcite.sql.SqlJsonQueryEmptyOrErrorBehavior;
 import org.apache.calcite.sql.SqlJsonQueryWrapperBehavior;
@@ -45,6 +48,7 @@ import com.jayway.jsonpath.spi.mapper.MappingProvider;
 
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.units.qual.A;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,6 +68,10 @@ import java.util.regex.Pattern;
 
 import static org.apache.calcite.config.CalciteSystemProperty.FUNCTION_LEVEL_CACHE_MAX_SIZE;
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
+import static org.apache.calcite.sql.SqlJsonTableColumn.Type.FORMATTED;
+import static org.apache.calcite.sql.SqlJsonTableColumn.Type.NESTED;
+import static org.apache.calcite.sql.SqlJsonTableColumn.Type.ORDINALITY;
+import static org.apache.calcite.sql.SqlJsonTableColumn.Type.REGULAR;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 import static java.util.Objects.requireNonNull;
@@ -338,6 +346,40 @@ public class JsonFunctions {
         String path,
         List<SqlJsonTableColumn> columns,
         SqlJsonTableErrorBehavior errorBehavior) {
+      return null;
+    }
+
+    public @Nullable Enumerable jsonTable(
+        String input,
+        String path,
+        Object... args) {
+      final JsonPathContext jsonPathContext = jsonApiCommonSyntax(input, path);
+      final SqlJsonTableErrorBehavior errorBehavior =
+          (SqlJsonTableErrorBehavior) args[args.length - 2];
+      final int columns = (int) args[args.length - 1];
+      if (jsonPathContext.hasException()) {
+        if (errorBehavior == SqlJsonTableErrorBehavior.ERROR) {
+          throw toUnchecked(jsonPathContext.exc);
+        } else {
+          // todo: return empty
+          return null;
+        }
+      }
+      for (int i = 0; i < args.length - 2; i++) {
+        JsonTableColumn column = (JsonTableColumn) args[i];
+        switch (column.getType()) {
+        case ORDINALITY:
+          break;
+        case REGULAR:
+          break;
+        case NESTED:
+          break;
+        case FORMATTED:
+        default:
+          throw Util.needToImplement(FORMATTED);
+        }
+      }
+
       return null;
     }
 
@@ -685,6 +727,57 @@ public class JsonFunctions {
     }
   }
 
+  // public static JsonTableColumn jsonTableColumn(SqlJsonTableColumn.Type type) {
+  //   assert type == SqlJsonTableColumn.Type.ORDINALITY;
+  //   return new OrdinalityColumn();
+  // }
+
+  public static JsonTableColumn jsonTableColumn(
+      SqlJsonTableColumn.Type type, Object... args) {
+    switch (type) {
+    case ORDINALITY:
+      return new OrdinalityColumn();
+    case REGULAR:
+      final String path = (String) args[0];
+      SqlJsonValueEmptyOrErrorBehavior onError = SqlJsonValueEmptyOrErrorBehavior.NULL;
+      SqlJsonValueEmptyOrErrorBehavior onEmpty = SqlJsonValueEmptyOrErrorBehavior.NULL;
+      Object defaultValueOnError = null;
+      Object defaultValueOnEmpty = null;
+
+      int i = 1;
+      while (i < args.length) {
+        if (args[i] != SqlJsonValueEmptyOrErrorBehavior.DEFAULT) {
+          if (args[i + 1] == SqlJsonEmptyOrError.ERROR) {
+            onError = (SqlJsonValueEmptyOrErrorBehavior) args[i];
+          } else {
+            onEmpty = (SqlJsonValueEmptyOrErrorBehavior) args[i];
+          }
+          i = i + 2;
+        } else {
+          if (args[i + 2] == SqlJsonEmptyOrError.ERROR) {
+            onError = (SqlJsonValueEmptyOrErrorBehavior) args[i];
+            defaultValueOnError = args[i + 1];
+          } else {
+            onEmpty = (SqlJsonValueEmptyOrErrorBehavior) args[i];
+            defaultValueOnEmpty = args[i + 1];
+          }
+          i = i + 3;
+        }
+      }
+      return new RegularColumn(path, onEmpty, defaultValueOnEmpty, onError,
+          defaultValueOnError);
+    case NESTED:
+      final List<JsonTableColumn> columnList = new ArrayList<>();
+      for (int j = 1; j < args.length; j++) {
+        columnList.add((JsonTableColumn) args[j]);
+      }
+      return new NestedColumn((String) args[0], columnList);
+    case FORMATTED:
+    default:
+      throw Util.needToImplement(type);
+    }
+  }
+
   public static Integer jsonStorageSize(String input) {
     return jsonStorageSize(jsonValueExpression(input));
   }
@@ -992,5 +1085,59 @@ public class JsonFunctions {
     INSERT,
     SET,
     REMOVE
+  }
+
+  public static class OrdinalityColumn
+      implements JsonTableColumn {
+
+    @Override public SqlJsonTableColumn.Type getType() {
+      return ORDINALITY;
+    }
+  }
+
+  public static class RegularColumn
+      implements JsonTableColumn {
+    final String path;
+    final SqlJsonValueEmptyOrErrorBehavior emptyBehavior;
+    final @Nullable Object defaultValueOnEmpty;
+    final SqlJsonValueEmptyOrErrorBehavior errorBehavior;
+    final @Nullable Object defaultValueOnError;
+
+    public RegularColumn(
+        final String path,
+        final SqlJsonValueEmptyOrErrorBehavior emptyBehavior,
+        final @Nullable Object defaultValueOnEmpty,
+        final SqlJsonValueEmptyOrErrorBehavior errorBehavior,
+        final @Nullable Object defaultValueOnError) {
+      this.path = path;
+      this.emptyBehavior = emptyBehavior;
+      this.defaultValueOnEmpty = defaultValueOnEmpty;
+      this.errorBehavior = errorBehavior;
+      this.defaultValueOnError = defaultValueOnError;
+    }
+
+    @Override public SqlJsonTableColumn.Type getType() {
+      return REGULAR;
+    }
+  }
+
+  public static class NestedColumn
+      implements JsonTableColumn {
+    final String path;
+    final List<JsonTableColumn> columns;
+
+    public NestedColumn(final String path, final List<JsonTableColumn> columns) {
+      this.path = path;
+      this.columns = columns;
+    }
+
+    @Override public SqlJsonTableColumn.Type getType() {
+      return NESTED;
+    }
+  }
+
+
+  public interface JsonTableColumn {
+    SqlJsonTableColumn.Type getType();
   }
 }

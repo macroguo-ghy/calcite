@@ -33,7 +33,7 @@ public class SqlJsonTableOrdinalityColumn extends SqlJsonTableColumn {
 
   public SqlJsonTableOrdinalityColumn(
       SqlParserPos pos, SqlIdentifier name) {
-    super(pos, Objects.requireNonNull(name, "name"));
+    super(pos, Objects.requireNonNull(name, "name"), Type.ORDINALITY);
   }
 
   @Override public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
@@ -54,6 +54,7 @@ public class SqlJsonTableOrdinalityColumn extends SqlJsonTableColumn {
   @Override public RelDataType deriveType(SqlValidator validator) {
     RelDataTypeFactory.Builder builder = validator.getTypeFactory().builder();
     builder.add(Objects.requireNonNull(name, "name").getSimple(), SqlTypeName.INTEGER);
-    return builder.build();
+    derivedType = builder.build();
+    return derivedType;
   }
 }

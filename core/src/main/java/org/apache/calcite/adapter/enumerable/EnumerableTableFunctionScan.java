@@ -27,21 +27,37 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableFunctionScan;
 import org.apache.calcite.rel.metadata.RelColumnMapping;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.runtime.JsonFunctions;
 import org.apache.calcite.schema.QueryableTable;
 import org.apache.calcite.schema.impl.TableFunctionImpl;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlJsonTableColumn;
+import org.apache.calcite.sql.SqlJsonTableColumnOperator;
+import org.apache.calcite.sql.SqlJsonTableOrdinalityColumn;
+import org.apache.calcite.sql.SqlJsonTableRegularColumn;
+import org.apache.calcite.sql.SqlJsonValueEmptyOrErrorBehavior;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlWindowTableFunction;
+import org.apache.calcite.sql.fun.SqlJsonTableFunction;
+import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlUserDefinedTableFunction;
+import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.Util;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /** Implementation of {@link org.apache.calcite.rel.core.TableFunctionScan} in
  * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}. */
@@ -70,8 +86,8 @@ public class EnumerableTableFunctionScan extends TableFunctionScan
   @Override public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
     if (isDefinedWindowTableFunction((RexCall) getCall())) {
       return tvfImplementorBasedImplement(implementor, pref);
-    } else if (isQueryable()) {
-      return defaultTableFunctionImplement(implementor, pref);
+    // } else if (((RexCall) getCall()).getOperator() instanceof SqlJsonTableFunction) {
+    //   return jsonTableFunctionImplement(implementor, pref);
     } else {
       return defaultTableFunctionImplement(implementor, pref);
     }
@@ -102,6 +118,49 @@ public class EnumerableTableFunctionScan extends TableFunctionScan
         (TableFunctionImpl) udtf.getFunction();
     final Method method = tableFunction.method;
     return QueryableTable.class.isAssignableFrom(method.getReturnType());
+  }
+
+  private Result jsonTableFunctionImplement(
+      EnumerableRelImplementor implementor,
+      @SuppressWarnings("unused") Prefer pref) {
+    RexCall call = (RexCall) getCall();
+    List<JsonFunctions.JsonTableColumn> columns = new ArrayList<>();
+    getJsonTableColumns(columns, call.getOperands());
+
+    return null;
+  }
+
+  private void getJsonTableColumns(
+      List<JsonFunctions.JsonTableColumn> columns,
+      List<RexNode> operands) {
+    List<RexCall> columnsRexCall =
+        operands.stream()
+            .filter(operand -> operand.isA(SqlKind.JSON_TABLE_COLUMN))
+            .map(operand -> (RexCall) operand)
+            .collect(Collectors.toList());
+
+    for (RexCall rexCall : columnsRexCall) {
+      switch (SqlJsonTableColumn.Type.valueOf(rexCall.getOperator().getName())) {
+      case ORDINALITY:
+        columns.add(new JsonFunctions.OrdinalityColumn());
+        break;
+      case REGULAR:
+        SqlJsonValueEmptyOrErrorBehavior onEmpty = SqlJsonValueEmptyOrErrorBehavior.NULL;
+        SqlJsonValueEmptyOrErrorBehavior onError = SqlJsonValueEmptyOrErrorBehavior.ERROR;
+
+        columns.add(new JsonFunctions.RegularColumn(
+            rexCall.getOperands().get(0).toString(), onEmpty, null, onError, null));
+        break;
+      case NESTED:
+        List<JsonFunctions.JsonTableColumn> nested = new ArrayList<>();
+        getJsonTableColumns(nested, rexCall.getOperands());
+        columns.add(
+            new JsonFunctions.NestedColumn(rexCall.getOperands().get(0).toString(), nested));
+        break;
+      case FORMATTED:
+        throw Util.needToImplement(SqlJsonTableColumn.Type.FORMATTED);
+      }
+    }
   }
 
   private Result defaultTableFunctionImplement(

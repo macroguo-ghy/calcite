@@ -5039,8 +5039,21 @@ public class SqlOperatorTest {
   @Test void testJsonValue() {
     final SqlOperatorFixture f = fixture();
 
-    f.check("select * from table(json_table('{\"foo\":100}', 'lax $.foo' columns ("
-            + "foo integer path '$')))",
+    final String ss = "SELECT name\n"
+        + "FROM TABLE( JSON_TABLE ( '[{\"a\":\"3\"},{\"a\":2},{\"b\":1},{\"a\":0},{\"a\":[1,2]}]', 'lax $'\n"
+        + "COLUMNS ( name VARCHAR(30) PATH 'lax $.Name' error on empty default 'dddd' on error,\n"
+        + "NESTED PATH 'lax $.books[*]'\n"
+        + "COLUMNS ( title VARCHAR(60) PATH 'lax $.title',\n"
+        + "NESTED PATH 'lax $.authorList[*]' AS A\n"
+        + "COLUMNS ( author1 VARCHAR(30) PATH 'lax $[0]',\n"
+        + " author2 VARCHAR(30) PATH 'lax $[1]'\n"
+        + ")))"
+        + ")) AS jt";
+    f.check(ss, "VARCHAR(30) NOT NULL", "");
+
+    f.check("select foo from (values ('a', 'b', 'c')) as t1(a,b,c), "
+            + "lateral table(json_table(t1.a, 'lax $.foo' columns ("
+            + "foo integer path '$', bar bigint path '$')))",
         "INTEGER NOT NULL", "INTEGER NOT NULL");
 
     if (false) {

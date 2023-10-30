@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A column of a JSON table.
+ * Regular column specification for {@code JSON_TABLE} function.
  */
 public class SqlJsonTableRegularColumn extends SqlJsonTableColumn {
 
@@ -42,7 +42,7 @@ public class SqlJsonTableRegularColumn extends SqlJsonTableColumn {
       SqlDataTypeSpec type,
       @Nullable SqlNode path,
       SqlNodeList behaviors) {
-    super(pos, Objects.requireNonNull(name, "name"));
+    super(pos, Objects.requireNonNull(name, "name"), Type.REGULAR);
     this.type = Objects.requireNonNull(type, "type");
     this.path = path;
     this.behaviors = Objects.requireNonNull(behaviors, "behaviors");
@@ -73,6 +73,7 @@ public class SqlJsonTableRegularColumn extends SqlJsonTableColumn {
     RelDataType relDataType = type.deriveType(validator);
     RelDataTypeFactory.Builder builder = validator.getTypeFactory().builder();
     builder.add(Objects.requireNonNull(name, "name").getSimple(), relDataType);
-    return builder.build();
+    derivedType = builder.build();
+    return derivedType;
   }
 }

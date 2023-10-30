@@ -40,7 +40,7 @@ public class SqlJsonTableNestedColumns extends SqlJsonTableColumn {
       @Nullable SqlIdentifier name,
       SqlNode path,
       SqlNodeList children) {
-    super(pos, name);
+    super(pos, name, Type.NESTED);
     this.path = Objects.requireNonNull(path, "path");
     this.children = Objects.requireNonNull(children, "children");
   }
@@ -82,6 +82,7 @@ public class SqlJsonTableNestedColumns extends SqlJsonTableColumn {
       assert childType.isStruct();
       childType.getFieldList().forEach(f -> builder.add(f.getName(), f.getType()));
     }
-    return builder.build();
+    derivedType = builder.build();
+    return derivedType;
   }
 }

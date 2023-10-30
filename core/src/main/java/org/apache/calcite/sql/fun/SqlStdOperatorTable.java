@@ -31,6 +31,7 @@ import org.apache.calcite.sql.SqlGroupedWindowFunction;
 import org.apache.calcite.sql.SqlHopTableFunction;
 import org.apache.calcite.sql.SqlInternalOperator;
 import org.apache.calcite.sql.SqlJsonConstructorNullClause;
+import org.apache.calcite.sql.SqlJsonTableColumnOperator;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLateralOperator;
 import org.apache.calcite.sql.SqlLiteral;
@@ -1416,6 +1417,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
   public static final SqlFunction JSON_EXISTS = new SqlJsonExistsFunction();
 
   public static final SqlFunction JSON_TABLE = new SqlJsonTableFunction();
+
+  public static final SqlOperator JSON_TABLE_COLUMN = new SqlJsonTableColumnOperator();
 
   public static final SqlFunction JSON_VALUE =
       new SqlJsonValueFunction("JSON_VALUE");

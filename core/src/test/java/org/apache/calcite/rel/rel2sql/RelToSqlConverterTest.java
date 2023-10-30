@@ -6267,6 +6267,20 @@ class RelToSqlConverterTest {
     sql(query).ok(expected);
   }
 
+  @Test void testJsonTable() {
+    String query = "select * from table(json_table('"
+        + "[{\"product_name\":\"product1\",\"product_id\":1},"
+        + "{\"product_name\":\"product2\",\"product_id\":2}]',"
+        + "'$[*]' columns (\"product_name\" varchar(20) path '$.product_name',"
+        + "\"product_id\" int path '$.product_id')))";
+    final String expected = "SELECT *\n"
+        + "FROM JSON_TABLE('[{\"product_name\":\"product1\",\"product_id\":1},"
+        + "{\"product_name\":\"product2\",\"product_id\":2}]', '$[*]' "
+        + "COLUMNS (\"product_name\" VARCHAR(20) PATH '$.product_name', "
+        + "\"product_id\" INTEGER PATH '$.product_id'))";
+    sql(query).ok(expected);
+  }
+
   @Test void testJsonValueExpressionOperator() {
     String query = "select \"product_name\" format json, "
         + "\"product_name\" format json encoding utf8, "

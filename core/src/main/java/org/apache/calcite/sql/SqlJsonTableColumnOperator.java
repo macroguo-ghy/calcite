@@ -25,10 +25,8 @@ import org.apache.calcite.sql.validate.SqlValidatorScope;
  */
 public class SqlJsonTableColumnOperator
     extends SqlSpecialOperator {
-  public SqlJsonTableColumnOperator(
-      String name,
-      SqlKind kind) {
-    super(name, kind);
+  public SqlJsonTableColumnOperator() {
+    super("JSON_TABLE_COLUMN", SqlKind.JSON_TABLE_COLUMN);
   }
 
   @Override public RelDataType deriveType(

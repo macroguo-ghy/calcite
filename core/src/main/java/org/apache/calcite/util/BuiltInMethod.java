@@ -113,6 +113,7 @@ import org.apache.calcite.sql.SqlJsonConstructorNullClause;
 import org.apache.calcite.sql.SqlJsonExistsErrorBehavior;
 import org.apache.calcite.sql.SqlJsonQueryEmptyOrErrorBehavior;
 import org.apache.calcite.sql.SqlJsonQueryWrapperBehavior;
+import org.apache.calcite.sql.SqlJsonTableColumn;
 import org.apache.calcite.sql.SqlJsonTableErrorBehavior;
 import org.apache.calcite.sql.SqlJsonValueEmptyOrErrorBehavior;
 
@@ -436,6 +437,10 @@ public enum BuiltInMethod {
       List.class, Object.class, SqlJsonConstructorNullClause.class),
   JSON_TABLE(JsonFunctions.StatefulFunction.class, "jsonTable",
       String.class, String.class, List.class, SqlJsonTableErrorBehavior.class),
+  JSON_TABLE2(JsonFunctions.StatefulFunction.class, "jsonTable",
+      String.class, String.class, Object[].class),
+  JSON_TABLE_COLUMN(JsonFunctions.class, "jsonTableColumn",
+      SqlJsonTableColumn.Type.class, Object[].class),
   IS_JSON_VALUE(JsonFunctions.class, "isJsonValue", String.class),
   IS_JSON_OBJECT(JsonFunctions.class, "isJsonObject", String.class),
   IS_JSON_ARRAY(JsonFunctions.class, "isJsonArray", String.class),

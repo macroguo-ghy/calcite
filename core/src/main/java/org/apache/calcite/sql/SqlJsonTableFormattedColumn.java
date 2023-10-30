@@ -46,7 +46,7 @@ public class SqlJsonTableFormattedColumn extends SqlJsonTableColumn {
       @Nullable SqlNode path,
       @Nullable SqlNode wrapper,
       SqlNodeList behaviors) {
-    super(pos, Objects.requireNonNull(name, "name"));
+    super(pos, Objects.requireNonNull(name, "name"), Type.FORMATTED);
     this.type = Objects.requireNonNull(type, "type");
     this.encoding = Objects.requireNonNull(encoding, "encoding");
     this.path = path;

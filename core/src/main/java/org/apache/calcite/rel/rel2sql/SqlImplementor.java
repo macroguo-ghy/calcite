@@ -777,6 +777,9 @@ public abstract class SqlImplementor {
         } else {
           return SqlStdOperatorTable.NOT.createCall(POS, node);
         }
+      case JSON_TABLE_COLUMN:
+        // todo: convert
+        return null;
 
       default:
         if (rex instanceof RexOver) {

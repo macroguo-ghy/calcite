@@ -365,6 +365,8 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_EXISTS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_OBJECT;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_OBJECTAGG;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_QUERY;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_TABLE;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_TABLE_COLUMN;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_TYPE_OPERATOR;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_VALUE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_VALUE_EXPRESSION;
@@ -918,6 +920,10 @@ public class RexImpTable {
           BuiltInMethod.JSON_EXISTS3.method);
       map.put(JSON_VALUE,
           new JsonValueImplementor(BuiltInMethod.JSON_VALUE.method));
+      map.put(JSON_TABLE,
+          new JsonTableImplementor());
+      defineMethod(JSON_TABLE_COLUMN,
+          BuiltInMethod.JSON_TABLE_COLUMN.method, NullPolicy.STRICT);
       defineReflective(JSON_QUERY, BuiltInMethod.JSON_QUERY.method);
       defineMethod(JSON_TYPE, BuiltInMethod.JSON_TYPE.method, NullPolicy.ARG0);
       defineMethod(JSON_DEPTH, BuiltInMethod.JSON_DEPTH.method, NullPolicy.ARG0);
@@ -2836,6 +2842,22 @@ public class RexImpTable {
       final Expression target =
           Expressions.new_(method.getDeclaringClass());
       return Expressions.call(target, method, argValueList0);
+    }
+  }
+
+  private static class JsonTableImplementor extends MethodImplementor {
+    public JsonTableImplementor() {
+      super(BuiltInMethod.JSON_TABLE.method, NullPolicy.ARG0, false);
+    }
+
+    @Override Expression implementSafe(
+        final RexToLixTranslator translator,
+        final RexCall call,
+        final List<Expression> argValueList) {
+      final int columnCount = call.type.getFieldCount() - 1;
+      Expression count = Expressions.constant(columnCount);
+      argValueList.add(count);
+      return call(method, Expressions.new_(method.getDeclaringClass()), argValueList);
     }
   }
 
