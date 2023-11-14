@@ -1703,6 +1703,101 @@ class RelToSqlConverterTest {
     sql(query).withBigQuery().ok(expected);
   }
 
+  @Test void testBigQueryParseDatetimeFunctions() {
+    String parseTime = "select parse_time('%I:%M:%S', '07:30:00')\n"
+        + "from \"foodmart\".\"product\"\n";
+    final String expectedTimestampTrunc =
+        "SELECT PARSE_TIME('%I:%M:%S', '07:30:00')\n"
+            + "FROM \"foodmart\".\"product\"";
+    sql(parseTime).withLibrary(SqlLibrary.BIG_QUERY).ok(expectedTimestampTrunc);
+
+    String parseDate = "select parse_date('%A %b %e %Y', 'Thursday Dec 25 2008')\n"
+        + "from \"foodmart\".\"product\"\n";
+    final String expectedParseDate =
+        "SELECT PARSE_DATE('%A %b %e %Y', 'Thursday Dec 25 2008')\n"
+            + "FROM \"foodmart\".\"product\"";
+    sql(parseDate).withLibrary(SqlLibrary.BIG_QUERY).ok(expectedParseDate);
+
+    String parseTimestamp =
+        "select parse_timestamp('%a %b %e %I:%M:%S %Y', 'Thu Dec 25 07:30:00 2008')\n"
+        + "from \"foodmart\".\"product\"\n";
+    final String expectedParseTimestamp =
+        "SELECT PARSE_TIMESTAMP('%a %b %e %I:%M:%S %Y', 'Thu Dec 25 07:30:00 2008')\n"
+            + "FROM \"foodmart\".\"product\"";
+    sql(parseTimestamp).withLibrary(SqlLibrary.BIG_QUERY).ok(expectedParseTimestamp);
+
+    String parseDatetime =
+        "select parse_datetime('%a %b %e %I:%M:%S %Y', 'Thu Dec 25 07:30:00 2008')\n"
+        + "from \"foodmart\".\"product\"\n";
+    final String expectedParseDatetime =
+        "SELECT PARSE_DATETIME('%a %b %e %I:%M:%S %Y', 'Thu Dec 25 07:30:00 2008')\n"
+            + "FROM \"foodmart\".\"product\"";
+    sql(parseDatetime).withLibrary(SqlLibrary.BIG_QUERY).ok(expectedParseDatetime);
+  }
+
+  @Test void testBigQueryTimeTruncFunctions() {
+    String timestampTrunc = "select timestamp_trunc(timestamp '2012-02-03 15:30:00', month)\n"
+        + "from \"foodmart\".\"product\"\n";
+    final String expectedTimestampTrunc =
+        "SELECT TIMESTAMP_TRUNC(TIMESTAMP '2012-02-03 15:30:00', MONTH)\n"
+        + "FROM \"foodmart\".\"product\"";
+    sql(timestampTrunc).withLibrary(SqlLibrary.BIG_QUERY).ok(expectedTimestampTrunc);
+
+    String timeTrunc = "select time_trunc(time '15:30:00', minute)\n"
+        + "from \"foodmart\".\"product\"\n";
+    final String expectedTimeTrunc = "SELECT TIME_TRUNC(TIME '15:30:00', MINUTE)\n"
+        + "FROM \"foodmart\".\"product\"";
+    sql(timeTrunc).withLibrary(SqlLibrary.BIG_QUERY).ok(expectedTimeTrunc);
+  }
+
+  @Test void testBigQueryDatetimeFormatFunctions() {
+    final String formatTime = "select format_time('%H', time '12:45:30')\n"
+        + "from \"foodmart\".\"product\"\n";
+    final String formatDate = "select format_date('%b-%d-%Y', date '2012-02-03')\n"
+        + "from \"foodmart\".\"product\"\n";
+    final String formatTimestamp = "select format_timestamp('%b-%d-%Y',\n"
+        + "    timestamp with local time zone '2012-02-03 12:30:40')\n"
+        + "from \"foodmart\".\"product\"\n";
+    final String formatDatetime = "select format_datetime('%R',\n"
+        + "    timestamp '2012-02-03 12:34:34')\n"
+        + "from \"foodmart\".\"product\"\n";
+
+    final String expectedBqFormatTime =
+        "SELECT FORMAT_TIME('%H', TIME '12:45:30')\n"
+            + "FROM foodmart.product";
+    final String expectedBqFormatDate =
+        "SELECT FORMAT_DATE('%b-%d-%Y', DATE '2012-02-03')\n"
+            + "FROM foodmart.product";
+    final String expectedBqFormatTimestamp =
+        "SELECT FORMAT_TIMESTAMP('%b-%d-%Y', TIMESTAMP_WITH_LOCAL_TIME_ZONE '2012-02-03 12:30:40')\n"
+            + "FROM foodmart.product";
+    final String expectedBqFormatDatetime =
+        "SELECT FORMAT_DATETIME('%R', TIMESTAMP '2012-02-03 12:34:34')\n"
+            + "FROM foodmart.product";
+    final Sql sql = fixture().withBigQuery().withLibrary(SqlLibrary.BIG_QUERY);
+    sql.withSql(formatTime)
+        .ok(expectedBqFormatTime);
+    sql.withSql(formatDate)
+        .ok(expectedBqFormatDate);
+    sql.withSql(formatTimestamp)
+        .ok(expectedBqFormatTimestamp);
+    sql.withSql(formatDatetime)
+        .ok(expectedBqFormatDatetime);
+  }
+
+  /**
+   * Test that the type of a SAFE_CAST rex call is converted to an argument of the SQL call.
+   * See <a href="https://issues.apache.org/jira/browse/CALCITE-6117">[CALCITE-6117]</a>.
+   */
+  @Test void testBigQuerySafeCast() {
+    final String query = "select safe_cast(\"product_name\" as date) "
+        + "from \"foodmart\".\"product\"";
+    final String expected = "SELECT SAFE_CAST(\"product_name\" AS DATE)\n"
+        + "FROM \"foodmart\".\"product\"";
+
+    sql(query).withLibrary(SqlLibrary.BIG_QUERY).ok(expected);
+  }
+
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-3220">[CALCITE-3220]
    * HiveSqlDialect should transform the SQL-standard TRIM function to TRIM,
