@@ -44,7 +44,7 @@ pluginManagement {
         idv("org.nosphere.apache.rat")
         idv("org.owasp.dependencycheck")
         idv("org.sonarqube")
-        kotlin("jvm") version "kotlin".v()
+        1.9.21("jvm") version "1.9.21".v()
     }
     if (extra.has("enableMavenLocal") && extra["enableMavenLocal"].toString().ifBlank { "true" }.toBoolean()) {
         repositories {
