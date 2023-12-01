@@ -32,7 +32,6 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Pair;
 
-import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 
@@ -42,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /** Materialized view rewriting for join.
@@ -153,7 +153,7 @@ public abstract class MaterializedViewJoinRule<C extends MaterializedViewRule.Co
       RexNode otherCompensationPred,
       @Nullable Project topProject,
       RelNode node,
-      BiMap<RelTableRef, RelTableRef> viewToQueryTableMapping,
+      Map<RelTableRef, RelTableRef> viewToQueryTableMapping,
       EquivalenceClasses viewEC, EquivalenceClasses queryEC) {
     // Our target node is the node below the root, which should have the maximum
     // number of available expressions in the tree in order to maximize our
@@ -182,7 +182,7 @@ public abstract class MaterializedViewJoinRule<C extends MaterializedViewRule.Co
     if (!compensationColumnsEquiPred.isAlwaysTrue()) {
       RexNode newCompensationColumnsEquiPred =
           rewriteExpression(rexBuilder, mq, target, target, queryExprs,
-              viewToQueryTableMapping.inverse(), queryEC, false,
+              viewToQueryTableMapping, queryEC, false,
               compensationColumnsEquiPred);
       if (newCompensationColumnsEquiPred == null) {
         // Skip it
@@ -194,7 +194,7 @@ public abstract class MaterializedViewJoinRule<C extends MaterializedViewRule.Co
     if (!otherCompensationPred.isAlwaysTrue()) {
       RexNode newOtherCompensationPred =
           rewriteExpression(rexBuilder, mq, target, target, queryExprs,
-              viewToQueryTableMapping.inverse(), viewEC, true,
+              viewToQueryTableMapping, viewEC, true,
               otherCompensationPred);
       if (newOtherCompensationPred == null) {
         // Skip it
@@ -256,7 +256,7 @@ public abstract class MaterializedViewJoinRule<C extends MaterializedViewRule.Co
       RelNode node,
       @Nullable Project topViewProject,
       RelNode viewNode,
-      BiMap<RelTableRef, RelTableRef> queryToViewTableMapping,
+      Map<RelTableRef, RelTableRef> queryToViewTableMapping,
       EquivalenceClasses queryEC) {
     List<RexNode> exprs = topProject == null
         ? extractReferences(rexBuilder, node)
@@ -284,7 +284,7 @@ public abstract class MaterializedViewJoinRule<C extends MaterializedViewRule.Co
         : topViewProject.getProjects();
     List<RexNode> rewrittenExprs =
         rewriteExpressions(rexBuilder, mq, input, viewNode, viewExprs,
-            queryToViewTableMapping.inverse(), queryEC, true, exprsLineage);
+            queryToViewTableMapping, queryEC, true, exprsLineage);
     if (rewrittenExprs == null) {
       return null;
     }

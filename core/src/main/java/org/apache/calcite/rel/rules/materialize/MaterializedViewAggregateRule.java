@@ -60,7 +60,6 @@ import org.apache.calcite.util.mapping.Mappings;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
@@ -242,7 +241,7 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
       RexNode otherCompensationPred,
       @Nullable Project topProject,
       RelNode node,
-      BiMap<RelTableRef, RelTableRef> queryToViewTableMapping,
+      Map<RelTableRef, RelTableRef> queryToViewTableMapping,
       EquivalenceClasses viewEC, EquivalenceClasses queryEC) {
     Aggregate aggregate = (Aggregate) node;
 
@@ -383,7 +382,7 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
       RelNode node,
       @Nullable Project topViewProject0,
       RelNode viewNode,
-      BiMap<RelTableRef, RelTableRef> queryToViewTableMapping,
+      Map<RelTableRef, RelTableRef> queryToViewTableMapping,
       EquivalenceClasses queryEC) {
     final Aggregate queryAggregate = (Aggregate) node;
     final Aggregate viewAggregate = (Aggregate) viewNode;
@@ -748,7 +747,7 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
       RelNode node,
       RelNode target,
       ImmutableBitSet positions,
-      BiMap<RelTableRef, RelTableRef> tableMapping,
+      Map<RelTableRef, RelTableRef> tableMapping,
       EquivalenceClasses sourceEC,
       List<RexNode> additionalExprs) {
     Preconditions.checkArgument(additionalExprs.isEmpty());
@@ -770,7 +769,7 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
       final RexNode simplified = simplify.simplifyUnknownAsFalse(e);
       final RexNode expr =
           RexUtil.swapTableColumnReferences(rexBuilder, simplified,
-              tableMapping.inverse(), equivalenceClassesMap);
+              tableMapping, equivalenceClassesMap);
       exprsLineage.put(expr, i);
       SqlTypeName sqlTypeName = expr.getType().getSqlTypeName();
       if (sqlTypeName == SqlTypeName.TIMESTAMP

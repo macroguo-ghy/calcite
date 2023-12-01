@@ -29,6 +29,8 @@ import com.google.common.collect.ImmutableList;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.util.List;
 
@@ -38,6 +40,7 @@ import java.util.List;
  * sub-classes, in which materialized views are matched to the structure of a
  * plan.
  */
+@Execution(ExecutionMode.SAME_THREAD)
 class MaterializedViewRelOptRulesTest {
   static final MaterializedViewTester TESTER =
       new MaterializedViewTester() {
@@ -940,6 +943,7 @@ class MaterializedViewRelOptRulesTest {
             + "(\"depts\".\"name\" is not null and \"emps\".\"name\" = 'b')")
         .ok();
   }
+
 
   @Test void testJoinMaterializationUKFK1() {
     sql("select \"a\".\"empid\" \"deptno\" from\n"
