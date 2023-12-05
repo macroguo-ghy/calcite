@@ -355,7 +355,6 @@ public class RelMdSize implements MetadataHandler<BuiltInMetadata.Size> {
     case SMALLINT:
       return 2d;
     case INTEGER:
-    case FLOAT:
     case REAL:
     case DATE:
     case TIME:
@@ -365,6 +364,7 @@ public class RelMdSize implements MetadataHandler<BuiltInMetadata.Size> {
     case INTERVAL_MONTH:
       return 4d;
     case BIGINT:
+    case FLOAT:  // sic
     case DOUBLE:
     case TIMESTAMP:
     case TIMESTAMP_WITH_LOCAL_TIME_ZONE:

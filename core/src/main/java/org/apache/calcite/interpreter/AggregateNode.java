@@ -269,6 +269,41 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
     }
   }
 
+  private static Class<?> maxMinClass(AggregateCall call) {
+    boolean max = call.getAggregation() == SqlStdOperatorTable.MAX;
+    switch (call.getType().getSqlTypeName()) {
+    case INTEGER:
+      return max ? MaxInt.class : MinInt.class;
+    case REAL:
+      return max ? MaxFloat.class : MinFloat.class;
+    case FLOAT:
+    case DOUBLE:
+      return max ? MaxDouble.class : MinDouble.class;
+    case DECIMAL:
+      return max ? MaxBigDecimal.class : MinBigDecimal.class;
+    case BOOLEAN:
+      return max ? MaxBoolean.class : MinBoolean.class;
+    default:
+      return max ? MaxLong.class : MinLong.class;
+    }
+  }
+
+  private static Class<?> sumClass(AggregateCall call) {
+    switch (call.type.getSqlTypeName()) {
+    case DOUBLE:
+    case REAL:
+    case FLOAT:
+      return DoubleSum.class;
+    case DECIMAL:
+      return BigDecimalSum.class;
+    case INTEGER:
+      return IntSum.class;
+    case BIGINT:
+    default:
+      return LongSum.class;
+    }
+  }
+
   private static AggregateFunctionImpl getAggFunction(Class<?> clazz) {
     return requireNonNull(
         AggregateFunctionImpl.create(clazz),

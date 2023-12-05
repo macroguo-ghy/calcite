@@ -147,7 +147,7 @@ public class JethroDataSqlDialect extends SqlDialect {
       case "double":
         return SqlTypeName.DOUBLE;
       case "float":
-        return SqlTypeName.FLOAT;
+        return SqlTypeName.REAL;
       case "string":
         return SqlTypeName.VARCHAR;
       case "timestamp":
