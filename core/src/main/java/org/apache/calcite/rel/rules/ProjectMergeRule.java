@@ -114,12 +114,13 @@ public class ProjectMergeRule
 
     // If we're not in force mode and the two projects reference identical
     // inputs, then return and let ProjectRemoveRule replace the projects.
-    if (!config.force()) {
-      if (RexUtil.isIdentity(topProject.getProjects(),
-          topProject.getInput().getRowType())) {
-        return;
-      }
-    }
+    // topPermutation is not identity
+    // if (!config.force()) {
+    //   if (RexUtil.isIdentity(topProject.getProjects(),
+    //       topProject.getInput().getRowType())) {
+    //     return;
+    //   }
+    // }
 
     final List<RexNode> newProjects =
         RelOptUtil.pushPastProjectUnlessBloat(topProject.getProjects(),

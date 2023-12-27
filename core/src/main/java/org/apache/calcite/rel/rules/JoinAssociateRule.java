@@ -80,6 +80,18 @@ public class JoinAssociateRule
       return;
     }
 
+    if (!topJoin.getSystemFieldList().isEmpty()) {
+      // FIXME Enable this rule for joins with system fields
+      return;
+    }
+
+    // If either join is not inner, we cannot proceed.
+    // (Is this too strict?)
+    if (topJoin.getJoinType() != JoinRelType.INNER
+        || bottomJoin.getJoinType() != JoinRelType.INNER) {
+      return;
+    }
+
     //        topJoin
     //        /     \
     //   bottomJoin  C
@@ -93,18 +105,6 @@ public class JoinAssociateRule
     @SuppressWarnings("unused")
     final ImmutableBitSet bBitSet =
         ImmutableBitSet.range(aCount, aCount + bCount);
-
-    if (!topJoin.getSystemFieldList().isEmpty()) {
-      // FIXME Enable this rule for joins with system fields
-      return;
-    }
-
-    // If either join is not inner, we cannot proceed.
-    // (Is this too strict?)
-    if (topJoin.getJoinType() != JoinRelType.INNER
-        || bottomJoin.getJoinType() != JoinRelType.INNER) {
-      return;
-    }
 
     // Goal is to transform to
     //
@@ -134,8 +134,7 @@ public class JoinAssociateRule
     final Mappings.TargetMapping bottomMapping =
         Mappings.createShiftMapping(
             aCount + bCount + cCount,
-            0, aCount, bCount,
-            bCount, aCount + bCount, cCount);
+            0, aCount, bCount + cCount);
     final List<RexNode> newBottomList =
         new RexPermuteInputsShuttle(bottomMapping, relB, relC)
             .visitList(bottom);
