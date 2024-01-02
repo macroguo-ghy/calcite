@@ -201,7 +201,7 @@ public class Strong {
    *
    * <p>The answer is based on calls to {@link #isNull} for its constituent
    * expressions, and you may override methods to test hypotheses such as
-   * "if {@code x} is null, is {@code x + y} null? */
+   * "if {@code x} is null, is {@code x + y} null?" */
   public boolean isNull(RexNode node) {
     final Policy policy = policy(node);
     switch (policy) {

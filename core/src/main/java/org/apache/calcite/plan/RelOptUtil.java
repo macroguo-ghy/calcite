@@ -1720,13 +1720,13 @@ public abstract class RelOptUtil {
    * {@code IS NOT DISTINCT FROM} function call.
    *
    * <p>For example: {@code t1.key IS NOT DISTINCT FROM t2.key}
-   * can rewritten in expanded form as
+   * can be rewritten in expanded form as
    * {@code t1.key = t2.key OR (t1.key IS NULL AND t2.key IS NULL)}.
    *
    * @param call       Function expression to try collapsing
    * @param rexBuilder {@link RexBuilder} instance to create new {@link RexCall} instances.
    * @return If the given function is an expanded IS NOT DISTINCT FROM function call,
-   *         return a IS NOT DISTINCT FROM function call. Otherwise return the input
+   *         return a {@code IS NOT DISTINCT FROM} function call. Otherwise return the input
    *         function call as it is.
    */
   public static RexCall collapseExpandedIsNotDistinctFromExpr(final RexCall call,

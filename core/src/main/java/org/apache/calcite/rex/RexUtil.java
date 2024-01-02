@@ -1903,7 +1903,7 @@ public class RexUtil {
    * <p>Such differences in nullability occur when expressions are moved
    * through outer joins.
    *
-   * <p>Throws if there any greater inconsistencies of type. */
+   * <p>Throws if there are any greater inconsistencies of type. */
   public static List<RexNode> fixUp(final RexBuilder rexBuilder,
       List<RexNode> nodes, final List<RelDataType> fieldTypes) {
     return new FixNullabilityShuttle(rexBuilder, fieldTypes).apply(nodes);
