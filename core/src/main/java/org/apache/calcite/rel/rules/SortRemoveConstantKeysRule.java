@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 
 /**
  * Planner rule that removes keys from a
- * a {@link org.apache.calcite.rel.core.Sort} if those keys are known to be
+ * {@link org.apache.calcite.rel.core.Sort} if those keys are known to be
  * constant, or removes the entire Sort if all keys are constant.
  *
  * <p>Requires {@link RelCollationTraitDef}.
