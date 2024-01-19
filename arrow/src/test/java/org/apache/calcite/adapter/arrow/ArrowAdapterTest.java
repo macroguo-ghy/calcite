@@ -46,8 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
@@ -86,8 +86,8 @@ class ArrowAdapterTest {
 
   @BeforeAll
   static void initializeArrowState(@TempDir Path sharedTempDir) throws IOException, SQLException {
-    URL modelUrl = Objects.requireNonNull(
-        ArrowAdapterTest.class.getResource("/arrow-model.json"), "url");
+    URL modelUrl =
+        Objects.requireNonNull(ArrowAdapterTest.class.getResource("/arrow-model.json"), "url");
     Path sourceModelFilePath = Sources.of(modelUrl).file().toPath();
     Path modelFileTarget = sharedTempDir.resolve("arrow-model.json");
     Files.copy(sourceModelFilePath, modelFileTarget);
@@ -445,7 +445,11 @@ class ArrowAdapterTest {
     CalciteAssert.that()
         .with(arrow)
         .query(sql)
-        .returnsUnordered(result)
+        .returnsUnordered("COMM=0.00; SALESSUM=1500.00",
+            "COMM=1400.00; SALESSUM=1250.00",
+            "COMM=300.00; SALESSUM=1600.00",
+            "COMM=500.00; SALESSUM=1250.00",
+            "COMM=null; SALESSUM=23425.00")
         .explainContains(plan);
   }
 

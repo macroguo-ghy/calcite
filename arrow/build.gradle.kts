@@ -21,9 +21,12 @@ dependencies {
     implementation("org.apache.arrow:arrow-memory-netty")
     implementation("org.apache.arrow:arrow-vector")
     implementation("org.apache.arrow.gandiva:arrow-gandiva")
+    annotationProcessor("org.immutables:value")
+    compileOnly("org.immutables:value-annotations")
 
     testImplementation("org.apache.arrow:arrow-jdbc")
     testImplementation("net.hydromatic:scott-data-hsqldb")
     testImplementation("org.apache.commons:commons-lang3")
-    testImplementation(project(":core", "testClasses"))
+    testImplementation(project(":core"))
+    testImplementation(project(":testkit"))
 }

@@ -34,6 +34,7 @@ import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import com.google.common.collect.ImmutableList;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.value.Value;
 
 import java.util.List;
 
@@ -99,12 +100,13 @@ public class ArrowRules {
     }
 
     /** Rule configuration. */
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-      Config DEFAULT = EMPTY
+      Config DEFAULT = ImmutableConfig.builder()
           .withOperandSupplier(b0 ->
               b0.operand(LogicalFilter.class).oneInput(b1 ->
                   b1.operand(ArrowTableScan.class).noInputs()))
-          .as(Config.class);
+          .build();
 
       @Override default ArrowFilterRule toRule() {
         return new ArrowFilterRule(this);

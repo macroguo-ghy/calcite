@@ -77,8 +77,8 @@ public class ArrowData {
     ImmutableList.Builder<Field> childrenBuilder = ImmutableList.builder();
     FieldType intType = FieldType.nullable(new ArrowType.Int(32, true));
     FieldType stringType = FieldType.nullable(new ArrowType.Utf8());
-    FieldType floatType = FieldType.nullable(
-        new ArrowType.FloatingPoint(FloatingPointPrecision.SINGLE));
+    FieldType floatType =
+        FieldType.nullable(new ArrowType.FloatingPoint(FloatingPointPrecision.SINGLE));
     FieldType longType = FieldType.nullable(new ArrowType.Int(64, true));
 
     childrenBuilder.add(new Field("intField", intType, null));
@@ -136,8 +136,8 @@ public class ArrowData {
   public void writeArrowData(File file) throws IOException {
     FileOutputStream fileOutputStream = new FileOutputStream(file);
     Schema arrowSchema = makeArrowSchema();
-    VectorSchemaRoot vectorSchemaRoot = VectorSchemaRoot.create(arrowSchema,
-        new RootAllocator(Integer.MAX_VALUE));
+    VectorSchemaRoot vectorSchemaRoot =
+        VectorSchemaRoot.create(arrowSchema, new RootAllocator(Integer.MAX_VALUE));
     ArrowFileWriter arrowFileWriter =
         new ArrowFileWriter(vectorSchemaRoot, null, fileOutputStream.getChannel());
 
