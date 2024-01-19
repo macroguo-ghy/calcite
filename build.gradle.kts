@@ -331,6 +331,12 @@ allprojects {
     repositories {
         // RAT and Autostyle dependencies
         mavenCentral()
+        maven {
+            url = uri("https://maven.dremio.com/public/")
+            metadataSources {
+                mavenPom()
+            }
+        }
     }
 
     val javaUsed = file("src/main/java").isDirectory
