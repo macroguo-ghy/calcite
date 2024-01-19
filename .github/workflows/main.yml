@@ -69,7 +69,7 @@ jobs:
       with:
         job-id: jdk${{ matrix.jdk }}
         remote-build-cache-proxy-enabled: false
-        arguments: --scan --no-parallel --no-daemon build javadoc
+        arguments: --scan --no-parallel --no-daemon build javadoc --exclude-task :arrow:build
     - name: 'sqlline and sqllsh'
       shell: cmd
       run: |
@@ -103,7 +103,7 @@ jobs:
         with:
           job-id: jdk${{ matrix.jdk }}
           remote-build-cache-proxy-enabled: false
-          arguments: --scan --no-parallel --no-daemon build
+          arguments: --scan --no-parallel --no-daemon build --exclude-task :arrow:build
       - name: 'sqlline and sqllsh'
         shell: cmd
         run: |

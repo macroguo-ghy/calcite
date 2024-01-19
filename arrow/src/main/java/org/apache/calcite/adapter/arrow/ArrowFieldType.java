@@ -23,8 +23,6 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.arrow.vector.types.FloatingPointPrecision;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -37,12 +35,12 @@ import static java.util.Objects.requireNonNull;
 enum ArrowFieldType {
   INT(Primitive.INT),
   BOOLEAN(Primitive.BOOLEAN),
-  STRING(String.class, null),
+  STRING(String.class),
   FLOAT(Primitive.FLOAT),
   DOUBLE(Primitive.DOUBLE),
-  DATE(Date.class, null),
-  LIST(List.class, null),
-  DECIMAL(BigDecimal.class, null),
+  DATE(Date.class),
+  LIST(List.class),
+  DECIMAL(BigDecimal.class),
   LONG(Primitive.LONG),
   BYTE(Primitive.BYTE),
   SHORT(Primitive.SHORT);
@@ -50,10 +48,10 @@ enum ArrowFieldType {
   private final Class<?> clazz;
 
   ArrowFieldType(Primitive primitive) {
-    this(requireNonNull(primitive.boxClass, "boxClass"), primitive);
+    this(requireNonNull(primitive.boxClass, "boxClass"));
   }
 
-  ArrowFieldType(Class<?> clazz, @Nullable Primitive primitiveType) {
+  ArrowFieldType(Class<?> clazz) {
     this.clazz = clazz;
   }
 
