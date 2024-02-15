@@ -1245,9 +1245,11 @@ public class SqlFunctions {
 
   // LN
 
-  /** SQL {@code LN(number)} function applied to double values. */
-  public static double ln(double d) {
-    return Math.log(d);
+  // LN, LOG, LOG10, LOG2
+
+  /** SQL {@code LOG(number, number2)} function applied to double values. */
+  public static double log(double d0, double d1) {
+    return Math.log(d0) / Math.log(d1);
   }
 
   /** SQL {@code LN(number)} function applied to BigDecimal values. */
@@ -1265,6 +1267,17 @@ public class SqlFunctions {
   /** SQL {@code LOG10(number)} function applied to BigDecimal values. */
   public static double log10(BigDecimal d) {
     return Math.log10(d.doubleValue());
+  }
+
+  /** SQL {@code LOG2(number)} function applied to double values. */
+  public static @Nullable Double log2(double number) {
+    return (number <= 0) ? null : log(number, 2);
+  }
+
+  /** SQL {@code LOG2(number)} function applied to
+   * BigDecimal values. */
+  public static @Nullable Double log2(BigDecimal number) {
+    return log2(number.doubleValue());
   }
 
   // MOD
