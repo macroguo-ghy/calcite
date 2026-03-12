@@ -60,7 +60,6 @@ import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.codec.language.Soundex;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.commons.text.similarity.LevenshteinDistance;
@@ -6521,20 +6520,26 @@ public class SqlFunctions {
   /** SQL {@code TRANSLATE(string, search_chars, replacement_chars)}
    * function. */
   public static String translate3(String s, String search, String replacement) {
-    return org.apache.commons.lang3.StringUtils.replaceChars(s, search, replacement);
+    return Util.replaceChars(s, search, replacement);
   }
 
   /** SQL {@code REPLACE(string, search, replacement)} function. */
-  public static String replace(String s, String search, String replacement,
+  public static @Nullable String replace(@Nullable String s, @Nullable String search,
+      @Nullable String replacement,
       boolean isCaseSensitive) {
-    if (search.isEmpty()) {
+    if (s == null) {
+      return null;
+    }
+    // Align with org.apache.commons.lang3.Strings#replace contract:
+    // empty/null searchString or null replacement are treated as no-op.
+    if (search == null || search.isEmpty() || replacement == null) {
       return s;
     }
     if (isCaseSensitive) {
       return s.replace(search, replacement);
     }
     // for MSSQL's REPLACE function, search pattern is case-insensitive during matching
-    return org.apache.commons.lang3.Strings.CI.replace(s, search, replacement);
+    return Util.replaceIgnoreCase(s, search, replacement);
   }
 
   /** Helper for "array element reference". Caller has already ensured that
@@ -7699,7 +7704,7 @@ public class SqlFunctions {
       sb.append(
           String.format(Locale.ROOT, "%02d:%02d:%02d.%s", hours, minutes, seconds,
               millisString));
-    } else if (ObjectUtils.isNotEmpty(sb)
+    } else if (sb.length() != 0
         && hours == 0 && minutes == 0 && seconds == 0 && millis == 0) {
       return sb.toString().trim();
     } else {

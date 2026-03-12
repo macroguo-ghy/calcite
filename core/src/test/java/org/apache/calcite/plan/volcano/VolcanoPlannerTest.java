@@ -42,8 +42,6 @@ import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Pair;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
-
 import org.immutables.value.Value;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -362,7 +360,7 @@ class VolcanoPlannerTest {
             "Should throw exception fail since the type mismatches after "
                 + "applying rule.");
 
-    Throwable exception = ExceptionUtils.getRootCause(ex);
+    Throwable exception = rootCause(ex);
     assertThat(exception, instanceOf(IllegalArgumentException.class));
     assertThat(
         exception.getMessage(), isLinux("Type mismatch:\n"
@@ -370,6 +368,20 @@ class VolcanoPlannerTest {
             + "equiv rowtype: RecordType(JavaType(void) NOT NULL this) NOT NULL\n"
             + "Difference:\n"
             + "this: JavaType(class java.lang.Integer) -> JavaType(void) NOT NULL\n"));
+  }
+
+  private static Throwable rootCause(Throwable t) {
+    Throwable cur = t;
+    // Safety against loops in cause chain.
+    final java.util.IdentityHashMap<Throwable, Boolean> seen =
+        new java.util.IdentityHashMap<>();
+    while (cur.getCause() != null
+        && cur.getCause() != cur
+        && !seen.containsKey(cur.getCause())) {
+      seen.put(cur, Boolean.TRUE);
+      cur = cur.getCause();
+    }
+    return cur;
   }
 
   private static <E extends Comparable> List<E> sort(List<E> list) {

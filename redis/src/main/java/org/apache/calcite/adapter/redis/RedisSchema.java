@@ -19,9 +19,7 @@ package org.apache.calcite.adapter.redis;
 import org.apache.calcite.model.JsonCustomTable;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
-
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.calcite.util.Util;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -92,7 +90,7 @@ class RedisSchema extends AbstractSchema {
       if (jsonCustomTable.name.equals(tableName)) {
         Map<String, Object> map =
             requireNonNull(jsonCustomTable.operand, OPERAND);
-        if (ObjectUtils.isEmpty(map.get(DATA_FORMAT))) {
+        if (Util.isEmptyObject(map.get(DATA_FORMAT))) {
           throw new RuntimeException("dataFormat is invalid, it must be raw, csv or json");
         }
         RedisDataFormat dataFormatEnum =
@@ -100,7 +98,7 @@ class RedisSchema extends AbstractSchema {
         if (dataFormatEnum == null) {
           throw new RuntimeException("dataFormat is invalid, it must be raw, csv or json");
         }
-        if (ObjectUtils.isEmpty(map.get(FIELDS))) {
+        if (Util.isEmptyObject(map.get(FIELDS))) {
           throw new RuntimeException("fields is null");
         }
         dataFormat = map.get(DATA_FORMAT).toString();
@@ -114,9 +112,10 @@ class RedisSchema extends AbstractSchema {
     tableFieldInfo.setTableName(tableName);
     tableFieldInfo.setDataFormat(dataFormat);
     tableFieldInfo.setFields(fields);
-    if (StringUtils.isNotEmpty(keyDelimiter)) {
+    if (!keyDelimiter.isEmpty()) {
       tableFieldInfo.setKeyDelimiter(keyDelimiter);
     }
     return tableFieldInfo;
   }
+
 }
