@@ -3895,6 +3895,158 @@ LogicalFilter(condition=[=($7, 20)])
 ]]>
     </Resource>
   </TestCase>
+  <TestCase name="testFilterSampleTransposeWithBernoulli">
+    <Resource name="sql">
+      <![CDATA[select deptno from emp tablesample bernoulli(50) where deptno > 10]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalProject(DEPTNO=[$7])
+  LogicalFilter(condition=[>($7, 10)])
+    Sample(mode=[bernoulli], rate=[0.5], repeatableSeed=[-])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalProject(DEPTNO=[$7])
+  Sample(mode=[bernoulli], rate=[0.5], repeatableSeed=[0])
+    LogicalFilter(condition=[>($7, 10)])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testFilterSampleTransposeWithSystem">
+    <Resource name="sql">
+      <![CDATA[select deptno from emp tablesample system(50) where deptno > 10]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalProject(DEPTNO=[$7])
+  LogicalFilter(condition=[>($7, 10)])
+    Sample(mode=[system], rate=[0.5], repeatableSeed=[-])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalProject(DEPTNO=[$7])
+  Sample(mode=[system], rate=[0.5], repeatableSeed=[0])
+    LogicalFilter(condition=[>($7, 10)])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testFilterSampleTransposeWithSystemAndSeed">
+    <Resource name="sql">
+      <![CDATA[select deptno from emp
+tablesample system(50) repeatable(10) where deptno > 10]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalProject(DEPTNO=[$7])
+  LogicalFilter(condition=[>($7, 10)])
+    Sample(mode=[system], rate=[0.5], repeatableSeed=[10])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalProject(DEPTNO=[$7])
+  Sample(mode=[system], rate=[0.5], repeatableSeed=[10])
+    LogicalFilter(condition=[>($7, 10)])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testFilterSortTranspose">
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalFilter(condition=[<($0, 10)])
+  LogicalSort(sort0=[$0], dir0=[ASC])
+    LogicalProject(EMPNO=[$0])
+      LogicalTableScan(table=[[scott, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalSort(sort0=[$0], dir0=[ASC])
+  LogicalFilter(condition=[<($0, 10)])
+    LogicalProject(EMPNO=[$0])
+      LogicalTableScan(table=[[scott, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testFilterSortTransposeFetch">
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalFilter(condition=[<($0, 10)])
+  LogicalSort(sort0=[$0], dir0=[ASC], fetch=[1])
+    LogicalProject(EMPNO=[$0])
+      LogicalTableScan(table=[[scott, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testFilterSortTransposeOffset">
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalFilter(condition=[<($0, 10)])
+  LogicalSort(sort0=[$0], dir0=[ASC], offset=[1], fetch=[0])
+    LogicalProject(EMPNO=[$0])
+      LogicalTableScan(table=[[scott, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testFilterTableFunctionScanTranspose">
+    <Resource name="sql">
+      <![CDATA[select * from table(tfrt(cursor(select name from dept))) where name = '1']]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalProject(NAME=[$0])
+  LogicalFilter(condition=[=($0, '1')])
+    LogicalTableFunctionScan(invocation=[TFRT(CAST($0):CURSOR NOT NULL)], rowType=[RecordType(VARCHAR(10) NAME)])
+      LogicalProject(NAME=[$1])
+        LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalProject(NAME=[$0])
+  LogicalTableFunctionScan(invocation=[TFRT(CAST($0):CURSOR NOT NULL)], rowType=[RecordType(VARCHAR(10) NAME)])
+    LogicalFilter(condition=[=($0, '1')])
+      LogicalProject(NAME=[$1])
+        LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testFilterToCalc">
+    <Resource name="sql">
+      <![CDATA[select ename from emp where sal > all (select comm from emp)]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalProject(ENAME=[$1])
+  LogicalFilter(condition=[NOT(<= SOME($5, {
+LogicalProject(COMM=[$6])
+  LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+}))])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testFilterWithNonDeterministicConditionDoesNotDropTuples">
+    <Resource name="sql">
+      <![CDATA[SELECT * FROM (VALUES (0, 1, 2), (3, 4, 5)) AS t(a, b, c) WHERE RAND(t.a) > 0.5]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalProject(A=[$0], B=[$1], C=[$2])
+  LogicalFilter(condition=[>(RAND($0), CAST(0.5:DECIMAL(2, 1)):DOUBLE NOT NULL)])
+    LogicalValues(tuples=[[{ 0, 1, 2 }, { 3, 4, 5 }]])
+]]>
+    </Resource>
+  </TestCase>
   <TestCase name="testFlattenUncorrelatedCallBelowEquals">
     <Resource name="sql">
       <![CDATA[select * from emp e1 where exists (select * from emp e2 where e1.deptno = (e2.deptno+30))]]>
