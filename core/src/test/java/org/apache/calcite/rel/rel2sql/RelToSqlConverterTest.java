@@ -3697,6 +3697,20 @@ class RelToSqlConverterTest {
     final String expected = "SELECT INSTR('ABC', 'A')\n"
         + "FROM \"foodmart\".\"product\"";
     sql(query).withSQLite().ok(expected);
+
+    final String query1 = "select position('C' IN 'ABCABC' FROM 4) from \"product\"";
+    final String expected1 =
+        "SELECT CASE WHEN INSTR(SUBSTR('ABCABC', 4), 'C') > 0 THEN "
+            + "INSTR(SUBSTR('ABCABC', 4), 'C') + (4 - 1) ELSE 0 END\n"
+            + "FROM \"foodmart\".\"product\"";
+    sql(query1).withSQLite().ok(expected1);
+
+    final String query2 = "select position('A' IN 'ABC' FROM 2) from \"product\"";
+    final String expected2 =
+        "SELECT CASE WHEN INSTR(SUBSTR('ABC', 2), 'A') > 0 THEN "
+            + "INSTR(SUBSTR('ABC', 2), 'A') + (2 - 1) ELSE 0 END\n"
+            + "FROM \"foodmart\".\"product\"";
+    sql(query2).withSQLite().ok(expected2);
   }
 
   @Test void testPositionFunctionForHive() {
