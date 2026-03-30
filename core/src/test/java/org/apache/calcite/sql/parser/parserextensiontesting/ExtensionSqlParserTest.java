@@ -52,6 +52,19 @@ class ExtensionSqlParserTest extends SqlParserTest {
         .ok("CREATE TABLE `FOO`.`BAZ` (`I` INTEGER, `J` VARCHAR(10) NOT NULL)");
   }
 
+  // Test case for [CALCITE-7208] https://issues.apache.org/jira/browse/CALCITE-7208
+  @Test void testCreateOrAlterTable() {
+    sql("CREATE OR ALTER TABLE foo.baz(i INTEGER, j VARCHAR(10) NOT NULL)")
+        .ok("CREATE OR ALTER TABLE `FOO`.`BAZ` (`I` INTEGER, `J` VARCHAR(10) NOT NULL)");
+  }
+
+  // Test case for [CALCITE-7208] https://issues.apache.org/jira/browse/CALCITE-7208
+  @Test void testCreateOrReplaceView() {
+    sql("CREATE OR REPLACE VIEW v AS SELECT 1")
+        .ok("CREATE OR REPLACE VIEW `V` AS\n"
+            + "SELECT 1");
+  }
+
   @Test void testExtendedSqlStmt() {
     sql("DESCRIBE SPACE POWER")
         .node(new IsNull<SqlNode>());

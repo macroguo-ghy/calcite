@@ -28,6 +28,7 @@ data: {
     # Example: "org.apache.calcite.sql.*", "java.util.List".
     imports: [
       "org.apache.calcite.sql.SqlCreate",
+      "org.apache.calcite.sql.parser.parserextensiontesting.ExtensionSqlCreateOrAlterTable",
       "org.apache.calcite.sql.ddl.SqlDdlNodes",
       "org.apache.calcite.sql.parser.parserextensiontesting.ExtensionSqlCreateTable",
       "org.apache.calcite.sql.parser.parserextensiontesting.SqlUploadJarNode"
@@ -60,6 +61,10 @@ data: {
     createStatementParserMethods: [
       "SqlCreateTable"
       "SqlCreateView"
+    ]
+
+    createOrStatementParserMethods: [
+      "SqlCreateOrAlterTable"
     ]
 
     # List of files in @includes directory that have parser method

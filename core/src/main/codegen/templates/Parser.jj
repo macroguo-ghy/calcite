@@ -1165,6 +1165,9 @@ SqlNode SqlStmt() :
 }
 {
     (
+<#assign createStatementParserMethods = (parser.createStatementParserMethods!default.parser.createStatementParserMethods)>
+<#assign createOrStatementParserMethods = (parser.createOrStatementParserMethods!default.parser.createOrStatementParserMethods)>
+
 <#-- Add methods to parse additional statements here -->
 <#list (parser.statementParserMethods!default.parser.statementParserMethods) as method>
         LOOKAHEAD(2) stmt = ${method}
@@ -1174,7 +1177,7 @@ SqlNode SqlStmt() :
     |
         stmt = SqlAlter()
     |
-<#if (parser.createStatementParserMethods!default.parser.createStatementParserMethods)?size != 0>
+<#if createStatementParserMethods?size != 0 || createOrStatementParserMethods?size != 0>
         stmt = SqlCreate()
     |
 </#if>
@@ -4570,7 +4573,7 @@ String Scope() :
     ( <SYSTEM> | <SESSION> ) { return token.image.toUpperCase(Locale.ROOT); }
 }
 
-<#if (parser.createStatementParserMethods!default.parser.createStatementParserMethods)?size != 0>
+<#if createStatementParserMethods?size != 0 || createOrStatementParserMethods?size != 0>
 /**
  * Parses a CREATE statement.
  */
@@ -4583,16 +4586,30 @@ SqlCreate SqlCreate() :
 {
     <CREATE> { s = span(); }
     [
+        LOOKAHEAD(2)
         <OR> <REPLACE> {
             replace = true;
         }
     ]
     (
-<#-- additional literal parser methods are included here -->
-<#list (parser.createStatementParserMethods!default.parser.createStatementParserMethods) as method>
+<#if createOrStatementParserMethods?size != 0>
+<#-- additional CREATE OR parser methods are included here -->
+<#list createOrStatementParserMethods as method>
+        LOOKAHEAD(3)
+        create = ${method}(s)
+        <#sep>|</#sep>
+</#list>
+<#if createStatementParserMethods?size != 0>
+    |
+</#if>
+</#if>
+<#if createStatementParserMethods?size != 0>
+<#-- additional CREATE and CREATE OR REPLACE parser methods are included here -->
+<#list createStatementParserMethods as method>
         create = ${method}(s, replace)
         <#sep>| LOOKAHEAD(2) </#sep>
 </#list>
+</#if>
     )
     {
         return create;

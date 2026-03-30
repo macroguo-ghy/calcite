@@ -417,6 +417,12 @@ parser: {
   createStatementParserMethods: [
   ]
 
+  # List of methods for parsing extensions to "CREATE OR ..." calls other than
+  # "CREATE OR REPLACE". Each must accept arguments "(SqlParserPos pos)" and
+  # consume the "OR" action itself, for example by parsing "OR ALTER TABLE".
+  createOrStatementParserMethods: [
+  ]
+
   # List of methods for parsing extensions to "DROP" calls.
   # Each must accept arguments "(SqlParserPos pos)".
   # Example: "SqlDropSchema".

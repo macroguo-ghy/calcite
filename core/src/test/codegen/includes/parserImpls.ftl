@@ -36,6 +36,27 @@ SqlAlter SqlUploadJarNode(Span s, String scope) :
     }
 }
 
+SqlCreate SqlCreateOrAlterTable(Span s) :
+{
+    final SqlIdentifier id;
+    final SqlNodeList columnList;
+    final SqlNode query;
+}
+{
+    <OR> <ALTER> <TABLE> id = CompoundIdentifier()
+    (
+        columnList = ExtendList()
+    |   { columnList = null; }
+    )
+    (
+        <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+    |   { query = null; }
+    )
+    {
+        return new ExtensionSqlCreateOrAlterTable(s.end(this), id, columnList, query);
+    }
+}
+
 SqlCreate SqlCreateTable(Span s, boolean replace) :
 {
     final SqlIdentifier id;
