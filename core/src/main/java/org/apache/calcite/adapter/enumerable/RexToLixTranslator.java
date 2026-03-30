@@ -535,16 +535,25 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       case INTERVAL_DAY:
       case INTERVAL_DAY_HOUR:
       case INTERVAL_DAY_MINUTE:
-      case INTERVAL_DAY_SECOND:
       case INTERVAL_HOUR:
       case INTERVAL_HOUR_MINUTE:
-      case INTERVAL_HOUR_SECOND:
       case INTERVAL_MINUTE:
-      case INTERVAL_MINUTE_SECOND:
-      case INTERVAL_SECOND:
         return RexImpTable.optimize2(operand,
             Expressions.call(BuiltInMethod.INTERVAL_DAY_TIME_TO_STRING.method,
                 operand,
+                Expressions.constant(
+                    requireNonNull(interval, "interval").timeUnitRange),
+                Expressions.constant(
+                    interval.getFractionalSecondPrecision(
+                        typeFactory.getTypeSystem()))));
+      case INTERVAL_DAY_SECOND:
+      case INTERVAL_HOUR_SECOND:
+      case INTERVAL_MINUTE_SECOND:
+      case INTERVAL_SECOND:
+        return RexImpTable.optimize2(operand,
+            Expressions.call(
+                BuiltInMethod.INTERVAL_DAY_TIME_TO_STRING_BIG_DECIMAL.method,
+                EnumUtils.convert(operand, BigDecimal.class),
                 Expressions.constant(
                     requireNonNull(interval, "interval").timeUnitRange),
                 Expressions.constant(
@@ -573,6 +582,15 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
               Expressions.constant(scale),
               Expressions.constant(typeFactory.getTypeSystem().roundingMode()));
         } else if (sourceType.getFamily() == SqlTypeFamily.INTERVAL_DAY_TIME) {
+          if (sourceType.getSqlTypeName().isFractionalSecondInterval()) {
+            return Expressions.call(
+                BuiltInMethod.SHORT_INTERVAL_DECIMAL_CAST_BIG_DECIMAL_ROUNDING_MODE.method,
+                EnumUtils.convert(operand, BigDecimal.class),
+                Expressions.constant(precision),
+                Expressions.constant(scale),
+                Expressions.constant(sourceType.getSqlTypeName().getEndUnit().multiplier),
+                Expressions.constant(typeFactory.getTypeSystem().roundingMode()));
+          }
           return Expressions.call(
               BuiltInMethod.SHORT_INTERVAL_DECIMAL_CAST_ROUNDING_MODE.method,
               operand,
@@ -751,6 +769,10 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         final BigDecimal multiplier =
             targetType.getSqlTypeName().getEndUnit().multiplier;
         final BigDecimal divider = BigDecimal.ONE;
+        if (targetType.getSqlTypeName().isFractionalSecondInterval()) {
+          return RexImpTable.multiplyDivide(
+              EnumUtils.convert(operand, BigDecimal.class), multiplier, divider);
+        }
         return RexImpTable.multiplyDivide(operand, multiplier, divider);
 
       default:
@@ -1089,16 +1111,22 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     case INTERVAL_DAY:
     case INTERVAL_DAY_HOUR:
     case INTERVAL_DAY_MINUTE:
-    case INTERVAL_DAY_SECOND:
     case INTERVAL_HOUR:
     case INTERVAL_HOUR_MINUTE:
-    case INTERVAL_HOUR_SECOND:
     case INTERVAL_MINUTE:
-    case INTERVAL_MINUTE_SECOND:
-    case INTERVAL_SECOND:
       value2 = literal.getValueAs(Long.class);
       javaClass = long.class;
       break;
+    case INTERVAL_DAY_SECOND:
+    case INTERVAL_HOUR_SECOND:
+    case INTERVAL_MINUTE_SECOND:
+    case INTERVAL_SECOND:
+      final BigDecimal intervalValue = literal.getValueAs(BigDecimal.class);
+      assert javaClass == BigDecimal.class;
+      return Expressions.new_(BigDecimal.class,
+          Expressions.constant(
+              requireNonNull(intervalValue,
+                  () -> "value for " + literal).toPlainString()));
     case CHAR:
     case VARCHAR:
       value2 = literal.getValueAs(String.class);
@@ -1297,6 +1325,11 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       final BigDecimal multiplier = BigDecimal.ONE;
       final BigDecimal divider =
           sourceType.getSqlTypeName().getEndUnit().multiplier;
+      if (sourceType.getSqlTypeName().isFractionalSecondInterval()) {
+        return RexImpTable.multiplyDivide(
+            EnumUtils.convert(operand, BigDecimal.class), multiplier,
+            divider);
+      }
       return RexImpTable.multiplyDivide(operand, multiplier, divider);
     }
     if (SqlTypeName.INTERVAL_TYPES.contains(targetType.getSqlTypeName())
@@ -1305,6 +1338,10 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       // and then it should be a no-op.
       final BigDecimal multiplier = targetType.getSqlTypeName().getEndUnit().multiplier;
       final BigDecimal divider = BigDecimal.ONE;
+      if (targetType.getSqlTypeName().isFractionalSecondInterval()) {
+        return RexImpTable.multiplyDivide(
+            EnumUtils.convert(operand, BigDecimal.class), multiplier, divider);
+      }
       return RexImpTable.multiplyDivide(operand, multiplier, divider);
     }
     return operand;
@@ -1453,14 +1490,16 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     case INTERVAL_DAY:
     case INTERVAL_DAY_HOUR:
     case INTERVAL_DAY_MINUTE:
-    case INTERVAL_DAY_SECOND:
     case INTERVAL_HOUR:
     case INTERVAL_HOUR_MINUTE:
-    case INTERVAL_HOUR_SECOND:
     case INTERVAL_MINUTE:
+      javaClass = Long.class;
+      break;
+    case INTERVAL_DAY_SECOND:
+    case INTERVAL_HOUR_SECOND:
     case INTERVAL_MINUTE_SECOND:
     case INTERVAL_SECOND:
-      javaClass = Long.class;
+      javaClass = BigDecimal.class;
       break;
     default:
       break;

@@ -17,6 +17,7 @@
 package org.apache.calcite.test;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.runtime.Utilities;
@@ -170,6 +171,20 @@ class SqlFunctionsTest {
     assertThat(SqlFunctions.toString(new BigDecimal("-0.0625")), is("-.0625"));
     assertThat(SqlFunctions.toString(new BigDecimal("0.0625")), is(".0625"));
     assertThat(SqlFunctions.toString(new BigDecimal("-5e-12")), is("-5E-12"));
+  }
+
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-6752">[CALCITE-6752]
+   * JavaTypeFactoryImpl cannot represent fractional seconds</a>. */
+  @Test void testIntervalDayTimeToStringWithFractionalMilliseconds() {
+    assertThat(
+        SqlFunctions.intervalDayTimeToString(
+            new BigDecimal("1234.567"), TimeUnitRange.SECOND, 6),
+        is("+1.234567"));
+    assertThat(
+        SqlFunctions.intervalDayTimeToString(
+            new BigDecimal("90061000.001"), TimeUnitRange.DAY_TO_SECOND, 6),
+        is("+1 01:01:01.000001"));
   }
 
   @Test void testConcat() {

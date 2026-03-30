@@ -1683,6 +1683,21 @@ public class RexImpTable {
    * {@code e / 100}. */
   public static Expression multiplyDivide(Expression e, BigDecimal multiplier,
       BigDecimal divider) {
+    if (e.getType() == BigDecimal.class) {
+      if (multiplier.equals(divider)) {
+        return e;
+      }
+      Expression result = e;
+      if (!multiplier.equals(BigDecimal.ONE)) {
+        result = Expressions.call(result, "multiply",
+            Expressions.constant(multiplier));
+      }
+      if (!divider.equals(BigDecimal.ONE)) {
+        result = Expressions.call(result, "divide",
+            Expressions.constant(divider));
+      }
+      return result;
+    }
     if (multiplier.equals(BigDecimal.ONE)) {
       if (divider.equals(BigDecimal.ONE)) {
         return e;
@@ -4102,18 +4117,25 @@ public class RexImpTable {
       case INTERVAL_DAY:
       case INTERVAL_DAY_HOUR:
       case INTERVAL_DAY_MINUTE:
-      case INTERVAL_DAY_SECOND:
       case INTERVAL_HOUR:
       case INTERVAL_HOUR_MINUTE:
-      case INTERVAL_HOUR_SECOND:
       case INTERVAL_MINUTE:
-      case INTERVAL_MINUTE_SECOND:
-      case INTERVAL_SECOND:
         switch (call.getKind()) {
         case MINUS:
           return normalize(typeName, Expressions.subtract(trop0, trop1));
         default:
           return normalize(typeName, Expressions.add(trop0, trop1));
+        }
+
+      case INTERVAL_DAY_SECOND:
+      case INTERVAL_HOUR_SECOND:
+      case INTERVAL_MINUTE_SECOND:
+      case INTERVAL_SECOND:
+        switch (call.getKind()) {
+        case MINUS:
+          return normalize(typeName, Expressions.call(trop0, "subtract", trop1));
+        default:
+          return normalize(typeName, Expressions.call(trop0, "add", trop1));
         }
 
       default:
@@ -4131,10 +4153,15 @@ public class RexImpTable {
           TimeUnit fromUnit =
               typeName1 == SqlTypeName.DATE ? TimeUnit.DAY : TimeUnit.MILLISECOND;
           TimeUnit toUnit = TimeUnit.MILLISECOND;
-          return multiplyDivide(
+          final Expression interval =
+              multiplyDivide(
               Expressions.convert_(Expressions.subtract(trop0, trop1),
                   long.class),
               fromUnit.multiplier, toUnit.multiplier);
+          if (typeName.isFractionalSecondInterval()) {
+            return EnumUtils.convert(interval, BigDecimal.class);
+          }
+          return interval;
         default:
           throw new AssertionError(call);
         }

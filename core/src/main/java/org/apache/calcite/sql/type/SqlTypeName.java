@@ -951,6 +951,19 @@ public enum SqlTypeName {
     }
   }
 
+  /** Returns whether this interval type can carry fractional seconds. */
+  public boolean isFractionalSecondInterval() {
+    switch (this) {
+    case INTERVAL_DAY_SECOND:
+    case INTERVAL_HOUR_SECOND:
+    case INTERVAL_MINUTE_SECOND:
+    case INTERVAL_SECOND:
+      return true;
+    default:
+      return false;
+    }
+  }
+
   public boolean isYearMonth() {
     switch (this) {
     case INTERVAL_YEAR:

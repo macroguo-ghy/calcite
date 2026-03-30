@@ -20,6 +20,7 @@ import org.apache.calcite.DataContext;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
+import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.interpreter.Row;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -5351,6 +5352,164 @@ public class SqlFunctions {
 
   public static long unixDateExtract(TimeUnitRange range, long date) {
     return DateTimeUtils.unixDateExtract(range, date);
+  }
+
+  /** Helper for CAST({interval day-time} AS VARCHAR(n)) when the interval is
+   * stored as milliseconds in a {@link BigDecimal}. */
+  public static String intervalDayTimeToString(BigDecimal value,
+      TimeUnitRange range, int scale) {
+    final StringBuilder buf = new StringBuilder();
+    BigDecimal v = value;
+    if (v.signum() >= 0) {
+      buf.append('+');
+    } else {
+      buf.append('-');
+      v = v.negate();
+    }
+    v = roundIntervalDayTime(v, range, scale);
+
+    final BigDecimal second = TimeUnit.SECOND.multiplier;
+    final BigDecimal minute = TimeUnit.MINUTE.multiplier;
+    final BigDecimal hour = TimeUnit.HOUR.multiplier;
+    final BigDecimal day = TimeUnit.DAY.multiplier;
+
+    final BigDecimal[] result0;
+    final BigDecimal[] result1;
+    final BigDecimal[] result2;
+    final BigDecimal[] result3;
+    switch (range) {
+    case DAY_TO_SECOND:
+      result0 = v.divideAndRemainder(day);
+      result1 = result0[1].divideAndRemainder(hour);
+      result2 = result1[1].divideAndRemainder(minute);
+      result3 = result2[1].divideAndRemainder(second);
+      appendIntervalField(buf, result0[0], -1);
+      buf.append(' ');
+      appendIntervalField(buf, result1[0], 2);
+      buf.append(':');
+      appendIntervalField(buf, result2[0], 2);
+      buf.append(':');
+      appendIntervalField(buf, result3[0], 2);
+      appendIntervalFraction(buf, result3[1], scale);
+      break;
+    case DAY_TO_MINUTE:
+      result0 = v.divideAndRemainder(day);
+      result1 = result0[1].divideAndRemainder(hour);
+      result2 = result1[1].divideAndRemainder(minute);
+      appendIntervalField(buf, result0[0], -1);
+      buf.append(' ');
+      appendIntervalField(buf, result1[0], 2);
+      buf.append(':');
+      appendIntervalField(buf, result2[0], 2);
+      break;
+    case DAY_TO_HOUR:
+      result0 = v.divideAndRemainder(day);
+      result1 = result0[1].divideAndRemainder(hour);
+      appendIntervalField(buf, result0[0], -1);
+      buf.append(' ');
+      appendIntervalField(buf, result1[0], 2);
+      break;
+    case DAY:
+      result0 = v.divideAndRemainder(day);
+      appendIntervalField(buf, result0[0], -1);
+      break;
+    case HOUR_TO_SECOND:
+      result0 = v.divideAndRemainder(hour);
+      result1 = result0[1].divideAndRemainder(minute);
+      result2 = result1[1].divideAndRemainder(second);
+      appendIntervalField(buf, result0[0], -1);
+      buf.append(':');
+      appendIntervalField(buf, result1[0], 2);
+      buf.append(':');
+      appendIntervalField(buf, result2[0], 2);
+      appendIntervalFraction(buf, result2[1], scale);
+      break;
+    case HOUR_TO_MINUTE:
+      result0 = v.divideAndRemainder(hour);
+      result1 = result0[1].divideAndRemainder(minute);
+      appendIntervalField(buf, result0[0], -1);
+      buf.append(':');
+      appendIntervalField(buf, result1[0], 2);
+      break;
+    case HOUR:
+      result0 = v.divideAndRemainder(hour);
+      appendIntervalField(buf, result0[0], -1);
+      break;
+    case MINUTE_TO_SECOND:
+      result0 = v.divideAndRemainder(minute);
+      result1 = result0[1].divideAndRemainder(second);
+      appendIntervalField(buf, result0[0], -1);
+      buf.append(':');
+      appendIntervalField(buf, result1[0], 2);
+      appendIntervalFraction(buf, result1[1], scale);
+      break;
+    case MINUTE:
+      result0 = v.divideAndRemainder(minute);
+      appendIntervalField(buf, result0[0], -1);
+      break;
+    case SECOND:
+      result0 = v.divideAndRemainder(second);
+      appendIntervalField(buf, result0[0], -1);
+      appendIntervalFraction(buf, result0[1], scale);
+      break;
+    default:
+      throw new AssertionError(range);
+    }
+    return buf.toString();
+  }
+
+  private static BigDecimal roundIntervalDayTime(BigDecimal value,
+      TimeUnitRange range, int scale) {
+    switch (range) {
+    case DAY_TO_SECOND:
+    case HOUR_TO_SECOND:
+    case MINUTE_TO_SECOND:
+    case SECOND:
+      return roundIntervalValue(value, BigDecimal.ONE.scaleByPowerOfTen(3 - scale));
+    case DAY_TO_MINUTE:
+    case HOUR_TO_MINUTE:
+    case MINUTE:
+      return roundIntervalValue(value,
+          BigDecimal.valueOf(DateTimeUtils.MILLIS_PER_MINUTE));
+    case DAY_TO_HOUR:
+    case HOUR:
+      return roundIntervalValue(value,
+          BigDecimal.valueOf(DateTimeUtils.MILLIS_PER_HOUR));
+    case DAY:
+      return roundIntervalValue(value,
+          BigDecimal.valueOf(DateTimeUtils.MILLIS_PER_DAY));
+    default:
+      throw new AssertionError(range);
+    }
+  }
+
+  private static BigDecimal roundIntervalValue(BigDecimal value, BigDecimal unit) {
+    return value.divide(unit, 0, RoundingMode.HALF_UP).multiply(unit);
+  }
+
+  private static void appendIntervalField(StringBuilder buf, BigDecimal value,
+      int width) {
+    final String text =
+        value.setScale(0, RoundingMode.UNNECESSARY).toPlainString();
+    for (int i = text.length(); i < width; i++) {
+      buf.append('0');
+    }
+    buf.append(text);
+  }
+
+  private static void appendIntervalFraction(StringBuilder buf, BigDecimal millis,
+      int scale) {
+    if (scale <= 0) {
+      return;
+    }
+    final String digits = millis.movePointRight(scale - 3)
+        .setScale(0, RoundingMode.UNNECESSARY)
+        .toPlainString();
+    buf.append('.');
+    for (int i = digits.length(); i < scale; i++) {
+      buf.append('0');
+    }
+    buf.append(digits);
   }
 
   public static long unixDateExtract(String rangeString, long date) {

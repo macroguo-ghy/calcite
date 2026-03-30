@@ -464,6 +464,35 @@ public enum Primitive {
   }
 
   /**
+   * Convert a short time interval with fractional milliseconds to a decimal value.
+   * Called from code that stores SECOND-based day-time intervals as {@link BigDecimal}.
+   *
+   * @param unitScale Scale describing source interval type
+   */
+  public static @Nullable Object shortIntervalToDecimalCast(
+      @Nullable BigDecimal value, int precision, int scale,
+      BigDecimal unitScale) {
+    return shortIntervalToDecimalCast(value, precision, scale, unitScale,
+        RoundingMode.DOWN);
+  }
+
+  /**
+   * Convert a short time interval with fractional milliseconds to a decimal value.
+   * Called from code that stores SECOND-based day-time intervals as {@link BigDecimal}.
+   *
+   * @param unitScale Scale describing source interval type
+   */
+  public static @Nullable Object shortIntervalToDecimalCast(
+      @Nullable BigDecimal value, int precision, int scale,
+      BigDecimal unitScale, RoundingMode roundingMode) {
+    if (value == null) {
+      return null;
+    }
+    final BigDecimal result = value.divide(unitScale, scale, roundingMode);
+    return checkOverflow(result, precision, scale, roundingMode);
+  }
+
+  /**
    * Convert a long time interval to a decimal value.
    * Called from BuiltInMethod.LONG_INTERVAL_DECIMAL_CAST.
    * @param unitScale Scale describing source interval type */

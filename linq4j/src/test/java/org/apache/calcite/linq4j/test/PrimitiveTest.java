@@ -20,6 +20,8 @@ import org.apache.calcite.linq4j.tree.Primitive;
 
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -139,6 +141,17 @@ class PrimitiveTest {
     } catch (AssertionError e) {
       assertThat(e.getMessage(), is("BOOLEAN: null"));
     }
+  }
+
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-6752">[CALCITE-6752]
+   * JavaTypeFactoryImpl cannot represent fractional seconds</a>. */
+  @Test void testShortIntervalToDecimalCastWithFractionalMilliseconds() {
+    assertThat(
+        Primitive.shortIntervalToDecimalCast(
+            new BigDecimal("1234.567"), 7, 6, BigDecimal.valueOf(1000),
+            RoundingMode.DOWN),
+        hasToString("1.234567"));
   }
 
   /** Test for

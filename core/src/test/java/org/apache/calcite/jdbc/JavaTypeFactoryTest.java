@@ -16,7 +16,10 @@
  */
 package org.apache.calcite.jdbc;
 
+import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.SqlIntervalQualifier;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.test.SqlTests;
 import org.apache.calcite.sql.type.SqlTypeName;
 
@@ -25,6 +28,7 @@ import com.google.common.collect.ImmutableList;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 
 import static org.apache.calcite.linq4j.tree.Types.RecordType;
 
@@ -92,6 +96,34 @@ public final class JavaTypeFactoryTest {
     RelDataType sqlStructType = TYPE_FACTORY.toSql(javaStructType);
     assertThat(SqlTests.getTypeString(sqlStructType),
         is("RecordType(INTEGER a, INTEGER NOT NULL b) NOT NULL"));
+  }
+
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-6752">[CALCITE-6752]
+   * JavaTypeFactoryImpl cannot represent fractional seconds</a>. */
+  @Test void testGetJavaClassWithFractionalSecondIntervalType() {
+    final RelDataType intervalSecondType =
+        TYPE_FACTORY.createSqlIntervalType(
+            new SqlIntervalQualifier(TimeUnit.SECOND, 2, null, 6,
+                SqlParserPos.ZERO));
+    final RelDataType intervalMinuteSecondType =
+        TYPE_FACTORY.createSqlIntervalType(
+            new SqlIntervalQualifier(TimeUnit.MINUTE, 2, TimeUnit.SECOND, 6,
+                SqlParserPos.ZERO));
+    final RelDataType intervalDaySecondType =
+        TYPE_FACTORY.createSqlIntervalType(
+            new SqlIntervalQualifier(TimeUnit.DAY, 2, TimeUnit.SECOND, 6,
+                SqlParserPos.ZERO));
+    final RelDataType intervalMinuteType =
+        TYPE_FACTORY.createSqlIntervalType(
+            new SqlIntervalQualifier(TimeUnit.MINUTE, null, SqlParserPos.ZERO));
+
+    assertThat(TYPE_FACTORY.getJavaClass(intervalSecondType), is((Type) BigDecimal.class));
+    assertThat(TYPE_FACTORY.getJavaClass(intervalMinuteSecondType),
+        is((Type) BigDecimal.class));
+    assertThat(TYPE_FACTORY.getJavaClass(intervalDaySecondType),
+        is((Type) BigDecimal.class));
+    assertThat(TYPE_FACTORY.getJavaClass(intervalMinuteType), is((Type) long.class));
   }
 
   private void assertRecordType(Type actual) {

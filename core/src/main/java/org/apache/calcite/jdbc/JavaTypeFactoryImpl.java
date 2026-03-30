@@ -180,6 +180,9 @@ public class JavaTypeFactoryImpl
       return javaType.getJavaClass();
     }
     if (type instanceof BasicSqlType || type instanceof IntervalSqlType) {
+      if (type.getSqlTypeName().isFractionalSecondInterval()) {
+        return BigDecimal.class;
+      }
       switch (type.getSqlTypeName()) {
       case VARCHAR:
       case CHAR:
